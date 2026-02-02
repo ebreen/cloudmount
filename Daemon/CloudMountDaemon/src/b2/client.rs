@@ -261,6 +261,21 @@ impl B2Client {
     pub fn bucket_name(&self) -> &str {
         &self.bucket_name
     }
+    
+    /// Get file info by path
+    ///
+    /// Looks up a specific file by its full path in B2.
+    /// Returns FileInfo if found, error otherwise.
+    pub async fn get_file_info(&self, file_path: &str) -> Result<FileInfo> {
+        // B2 doesn't have a direct "get file by path" API
+        // We use list_file_names with the exact path as prefix and no delimiter
+        let files = self.list_file_names(Some(file_path), None).await?;
+        
+        // Find exact match
+        files.into_iter()
+            .find(|f| f.file_name == file_path)
+            .ok_or_else(|| anyhow!("File not found: {}", file_path))
+    }
 }
 
 #[cfg(test)]
