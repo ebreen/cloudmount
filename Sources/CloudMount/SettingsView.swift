@@ -35,7 +35,7 @@ struct BucketsPane: View {
                 .font(.headline)
             
             Text("Configure your cloud storage buckets here.\nComing in Phase 2.")
-                .font(.caption)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
@@ -64,7 +64,7 @@ struct CredentialsPane: View {
             VStack(alignment: .leading, spacing: 16) {
                 // Section header
                 Text("BACKBLAZE B2")
-                    .font(.caption)
+                    .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
                 
@@ -75,7 +75,7 @@ struct CredentialsPane: View {
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Application Key")
-                            .font(.caption)
+                            .font(.subheadline)
                             .fontWeight(.medium)
                         
                         HStack(spacing: 6) {
@@ -102,9 +102,9 @@ struct CredentialsPane: View {
                 // Help text
                 HStack(spacing: 6) {
                     Image(systemName: "info.circle")
-                        .font(.caption2)
+                        .font(.caption)
                     Text("Find these in your Backblaze B2 account → App Keys")
-                        .font(.caption2)
+                        .font(.caption)
                 }
                 .foregroundStyle(.blue)
                 .padding(10)
@@ -143,7 +143,7 @@ struct CredentialsPane: View {
     private func formField(_ label: String, text: Binding<String>, placeholder: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
-                .font(.caption)
+                .font(.subheadline)
                 .fontWeight(.medium)
             TextField(placeholder, text: text)
                 .textFieldStyle(.roundedBorder)
@@ -163,7 +163,7 @@ struct CredentialsPane: View {
                 Text(message)
             }
         }
-        .font(.caption)
+        .font(.subheadline)
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(result.isSuccess ? .green.opacity(0.08) : .red.opacity(0.08))
@@ -229,7 +229,7 @@ struct GeneralPane: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("SYSTEM")
-                .font(.caption)
+                .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
             
@@ -238,7 +238,7 @@ struct GeneralPane: View {
                     Text("Launch at Login")
                         .font(.body)
                     Text("Automatically start CloudMount when you log in")
-                        .font(.caption)
+                        .font(.subheadline)
                         .foregroundStyle(.tertiary)
                 }
             }

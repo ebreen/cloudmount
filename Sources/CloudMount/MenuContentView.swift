@@ -1,5 +1,25 @@
 import SwiftUI
 
+// Custom button style with hover highlight
+struct MenuButtonStyle: ButtonStyle {
+    @State private var isHovered = false
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .padding(.vertical, 6)
+            .padding(.horizontal, 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isHovered || configuration.isPressed ? Color.primary.opacity(0.1) : Color.clear)
+            )
+            .contentShape(Rectangle())
+            .onHover { hovering in
+                isHovered = hovering
+            }
+    }
+}
+
 struct MenuContentView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.openSettings) private var openSettings
@@ -39,7 +59,7 @@ struct MenuContentView: View {
                     .font(.headline)
                     .fontWeight(.semibold)
                 Text("No buckets mounted")
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
             Spacer()
@@ -53,15 +73,16 @@ struct MenuContentView: View {
         HStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.orange)
+                .font(.body)
             VStack(alignment: .leading, spacing: 2) {
                 Text("macFUSE Required")
-                    .font(.caption)
+                    .font(.subheadline)
                     .fontWeight(.medium)
                 Button("Download") {
                     NSWorkspace.shared.open(URL(string: "https://macfuse.io")!)
                 }
                 .buttonStyle(.link)
-                .font(.caption)
+                .font(.subheadline)
             }
             Spacer()
             Button("Check") {
@@ -78,13 +99,13 @@ struct MenuContentView: View {
     private var bucketsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("BUCKETS")
-                .font(.caption2)
+                .font(.caption)
                 .fontWeight(.semibold)
                 .foregroundStyle(.tertiary)
             
             if appState.storedBuckets.isEmpty {
                 Text("No buckets configured")
-                    .font(.caption)
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 4)
             } else {
@@ -93,10 +114,10 @@ struct MenuContentView: View {
                         Image(systemName: "folder.fill")
                             .foregroundStyle(.blue)
                         Text(bucket)
-                            .font(.caption)
+                            .font(.subheadline)
                         Spacer()
                         Text("Not mounted")
-                            .font(.caption2)
+                            .font(.caption)
                             .foregroundStyle(.tertiary)
                     }
                 }
@@ -105,7 +126,7 @@ struct MenuContentView: View {
     }
     
     private var actionsSection: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             Button {
                 openSettings()
             } label: {
@@ -117,10 +138,7 @@ struct MenuContentView: View {
                         .foregroundStyle(.tertiary)
                 }
             }
-            .buttonStyle(.plain)
-            .padding(.vertical, 4)
-            .padding(.horizontal, 8)
-            .contentShape(Rectangle())
+            .buttonStyle(MenuButtonStyle())
             
             Button {
                 showAbout()
@@ -131,10 +149,7 @@ struct MenuContentView: View {
                     Spacer()
                 }
             }
-            .buttonStyle(.plain)
-            .padding(.vertical, 4)
-            .padding(.horizontal, 8)
-            .contentShape(Rectangle())
+            .buttonStyle(MenuButtonStyle())
             
             Divider()
                 .padding(.vertical, 4)
@@ -150,12 +165,9 @@ struct MenuContentView: View {
                         .foregroundStyle(.tertiary)
                 }
             }
-            .buttonStyle(.plain)
-            .padding(.vertical, 4)
-            .padding(.horizontal, 8)
-            .contentShape(Rectangle())
+            .buttonStyle(MenuButtonStyle())
         }
-        .font(.caption)
+        .font(.subheadline)
     }
     
     private func showAbout() {
