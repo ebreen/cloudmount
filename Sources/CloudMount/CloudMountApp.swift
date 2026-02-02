@@ -18,8 +18,17 @@ struct CloudMountApp: App {
             SettingsView()
                 .environmentObject(appState)
                 .onAppear {
-                    // Bring settings window to front
+                    // Bring settings window to front and make it key
                     NSApplication.shared.activate(ignoringOtherApps: true)
+                    // Find and make the settings window key
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        for window in NSApplication.shared.windows {
+                            if window.title.contains("Settings") || window.identifier?.rawValue.contains("settings") == true {
+                                window.makeKeyAndOrderFront(nil)
+                                break
+                            }
+                        }
+                    }
                 }
         }
     }
