@@ -91,22 +91,28 @@
 | FILE-04 | Phase 3 | Pending |
 | FILE-05 | Phase 2 | Pending |
 | UI-01 | Phase 1 | Pending |
-| UI-02 | Phase 4 | Pending |
+| UI-02 | Phase 2 | Pending |
 | UI-03 | Phase 4 | Pending |
-| UI-04 | Phase 4 | Pending |
+| UI-04 | Phase 2 | Pending |
 | UI-05 | Phase 4 | Pending |
 | CONFIG-01 | Phase 4 | Pending |
 | CONFIG-02 | Phase 4 | Pending |
 | CONFIG-03 | Phase 1 | Pending |
 | CONFIG-04 | Phase 1 | Pending |
-| ERROR-01 | Phase 5 | Pending |
-| ERROR-02 | Phase 5 | Pending |
+| ERROR-01 | Phase 3 | Pending |
+| ERROR-02 | Phase 3 | Pending |
 | ERROR-03 | Phase 1 | Pending |
 
 **Coverage:**
-- v1 requirements: 18 total
-- Mapped to phases: 18
+- v1 requirements: 21 total (18 original + 3 error handling)
+- Mapped to phases: 21
 - Unmapped: 0 ✓
+
+**Phase Summary:**
+- Phase 1 (Foundation): 5 requirements — MOUNT-04, CONFIG-03, CONFIG-04, UI-01, ERROR-03
+- Phase 2 (Core Mount & Browse): 7 requirements — MOUNT-01, MOUNT-02, MOUNT-03, FILE-01, FILE-05, UI-02, UI-04
+- Phase 3 (File I/O): 5 requirements — FILE-02, FILE-03, FILE-04, ERROR-01, ERROR-02
+- Phase 4 (Configuration & Polish): 4 requirements — CONFIG-01, CONFIG-02, UI-03, UI-05
 
 ---
 *Requirements defined: 2026-02-02*
