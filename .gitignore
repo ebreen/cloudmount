@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.build/
+target/
+
+# Tauri build artifacts
+src-tauri/target/
+
+# IDE
+.idea/
+*.xcworkspace/
+*.xcuserdata/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Swift Package Manager
+.swiftpm/
+Package.resolved
+
+# Vite cache
+.vite/
