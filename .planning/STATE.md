@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 1 of 4 (Foundation)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 01-02-PLAN.md (macFUSE detection)
+Last activity: 2026-02-02 — Completed 01-03-PLAN.md (secure credential storage)
 
-Progress: [███░░░░░░░] 12%
+Progress: [████░░░░░░] 15%
 
 ## Performance Metrics
 
@@ -50,6 +50,10 @@ Recent decisions affecting current work:
 - 01-02: Check both /Library and /System/Library paths for macFUSE installation
 - 01-02: Re-check macFUSE status every 5 seconds when not installed
 - 01-02: Use @tauri-apps/plugin-opener for browser integration (Tauri v2 pattern)
+- 01-03: Use keyring crate with apple-native feature for macOS Keychain access
+- 01-03: Store credentials as JSON in Keychain password field
+- 01-03: Never log application_key - only log bucket_name and key_id prefix
+- 01-03: Return generic error messages to frontend, detailed errors to logs
 
 ### Pending Todos
 
@@ -62,6 +66,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 12:50
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-02-02 13:04
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
