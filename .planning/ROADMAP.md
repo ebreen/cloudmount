@@ -6,7 +6,7 @@ Build CloudMount from foundation to functional product: start with app shell and
 
 ## Phases
 
-- [ ] **Phase 1: Foundation** - App shell, macFUSE detection, secure configuration storage
+- [x] **Phase 1: Foundation** - App shell, macFUSE detection, secure configuration storage *(Completed with Swift pivot)*
 - [ ] **Phase 2: Core Mount & Browse** - Mount/unmount buckets, browse directories, see metadata in Finder
 - [ ] **Phase 3: File I/O** - Read, write, and delete files through FUSE
 - [ ] **Phase 4: Configuration & Polish** - Settings window, disk usage display, complete status bar experience
@@ -25,10 +25,12 @@ Build CloudMount from foundation to functional product: start with app shell and
 **Plans**: TBD
 
 Plans:
-- [ ] 01-01: Initialize Tauri menu bar app with system tray icon
-- [ ] 01-02: Implement macFUSE detection with installation guidance
-- [ ] 01-03: Create secure credential storage using macOS Keychain
-- [ ] 01-04: Build settings window skeleton
+- [x] 01-01: Initialize menu bar app with system tray icon *(Swift/SwiftUI MenuBarExtra)*
+- [x] 01-02: Implement macFUSE detection with installation guidance *(FileManager-based)*
+- [x] 01-03: Create secure credential storage using macOS Keychain *(KeychainAccess library)*
+- [x] 01-04: Build settings window skeleton *(Native SwiftUI TabView)*
+
+**Note:** Phase 1 pivoted from Tauri/React to native Swift/SwiftUI mid-execution for better native UX.
 
 ### Phase 2: Core Mount & Browse
 **Goal**: Users can mount buckets as local volumes and browse directories in Finder
@@ -90,11 +92,12 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/4 | Not started | - |
-| 2. Core Mount & Browse | 0/4 | Not started | - |
+| 1. Foundation | 4/4 | Complete | 2026-02-02 |
+| 2. Core Mount & Browse | 0/4 | Ready | - |
 | 3. File I/O | 0/4 | Not started | - |
 | 4. Configuration & Polish | 0/4 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-02*
+*Phase 1 completed: 2026-02-02 (pivoted to Swift/SwiftUI)*
 *Requirements coverage: 18/18 v1 requirements mapped*

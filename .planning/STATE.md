@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Users can mount cloud storage buckets as local drives and access them seamlessly in Finder with a beautiful status bar interface for management.
-**Current focus:** Phase 1 - Foundation
+**Current focus:** Phase 2 - Core Mount & Browse
 
 ## Current Position
 
-Phase: 1 of 4 (Foundation)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-02-02 — Completed 01-03-PLAN.md (secure credential storage)
+Phase: 2 of 4 (Core Mount & Browse)
+Plan: 0 of 4 in current phase
+Status: Ready to start
+Last activity: 2026-02-02 — Completed Phase 1 (Foundation) with Swift pivot
 
-Progress: [████░░░░░░] 15%
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
-- Average duration: 11 min
-- Total execution time: 0.35 hours
+- Total plans completed: 4 (Phase 1 complete)
+- Average duration: ~15 min
+- Total execution time: ~1 hour
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 2/4 | 21 min | 10.5 min |
+| 01-foundation | 4/4 | ~60 min | ~15 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min), 01-02 (13 min)
-- Trend: Consistent velocity
+- Phase 1 completed with mid-phase tech stack pivot
+- Trend: Pivot added time but achieved better native UX
 
 *Updated after each plan completion*
 
@@ -42,18 +42,16 @@ Progress: [████░░░░░░] 15%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- Phase 1: Tauri selected over Electron for lighter weight and better macOS native feel
+- **PIVOT: Tauri/React → Native Swift/SwiftUI** (mid-Phase 1)
+  - Reason: User feedback that Tauri UI looked non-native
+  - Inspired by CodexBar (https://github.com/steipete/CodexBar)
+  - Result: True native macOS look and feel
 - Phase 1: macFUSE installation will be user-responsibility with clear detection and guidance
-- 01-01: Used Tauri v2 instead of v1 for better tray-icon support and modern APIs
-- 01-01: Menu bar app uses ActivationPolicy::Accessory to hide dock icon on macOS
-- 01-01: Event-driven window creation pattern (backend emits, frontend creates windows)
-- 01-02: Check both /Library and /System/Library paths for macFUSE installation
-- 01-02: Re-check macFUSE status every 5 seconds when not installed
-- 01-02: Use @tauri-apps/plugin-opener for browser integration (Tauri v2 pattern)
-- 01-03: Use keyring crate with apple-native feature for macOS Keychain access
-- 01-03: Store credentials as JSON in Keychain password field
-- 01-03: Never log application_key - only log bucket_name and key_id prefix
-- 01-03: Return generic error messages to frontend, detailed errors to logs
+- Swift: Using MenuBarExtra for status bar (macOS 13+)
+- Swift: Using KeychainAccess library for credential storage
+- Swift: FileManager.default.fileExists for macFUSE detection
+- Swift: Settings window with native TabView (Buckets/Credentials/General tabs)
+- Architecture: Swift app handles UI, Rust daemon will handle FUSE (Phase 2)
 
 ### Pending Todos
 
@@ -63,9 +61,27 @@ None yet.
 
 - macFUSE kernel extension installation may require Recovery Mode on some macOS versions
 - Synchronous upload on file close will block filesystem (acceptable for MVP, document limitation)
+- Phase 2 will need Rust daemon for FUSE mounting (Swift cannot directly use fuser crate)
 
 ## Session Continuity
 
-Last session: 2026-02-02 13:04
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-02-02
+Stopped at: Completed Phase 1 with Swift pivot
 Resume file: None
+
+## Tech Stack (Post-Pivot)
+
+**Swift/SwiftUI (UI Layer):**
+- `Package.swift` - Swift Package Manager config
+- `Sources/CloudMount/CloudMountApp.swift` - Main app with MenuBarExtra
+- `Sources/CloudMount/MacFUSEDetector.swift` - macFUSE detection
+- `Sources/CloudMount/CredentialStore.swift` - Keychain storage
+- `Sources/CloudMount/MenuContentView.swift` - Menu bar dropdown
+- `Sources/CloudMount/SettingsView.swift` - Settings window
+
+**Dependencies:**
+- KeychainAccess (credential storage)
+
+**Preserved but unused:**
+- `src-tauri/` - Original Tauri backend (preserved for reference)
+- `src/` - Original React frontend (preserved for reference)
