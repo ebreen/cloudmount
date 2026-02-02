@@ -42,13 +42,13 @@ Plans:
   3. File metadata (size, modification time) displays correctly in Finder
   4. User can unmount the bucket from the status bar menu with one click
   5. Status bar menu shows list of configured buckets with mount status
-**Plans**: TBD
+**Plans**: 4 plans in 2 waves
 
 Plans:
-- [ ] 02-01: Implement FUSE filesystem trait with getattr and readdir
-- [ ] 02-02: Build mount manager for mount/unmount lifecycle
-- [ ] 02-03: Add metadata caching layer for directory performance
-- [ ] 02-04: Integrate mount status with status bar menu
+- [ ] 02-01-PLAN.md — Implement FUSE filesystem trait with getattr and readdir
+- [ ] 02-02-PLAN.md — Build mount manager for mount/unmount lifecycle
+- [ ] 02-03-PLAN.md — Add metadata caching layer for directory performance
+- [ ] 02-04-PLAN.md — Integrate mount status with status bar menu
 
 ### Phase 3: File I/O
 **Goal**: Users can read, write, and delete files through the mounted volume
@@ -93,7 +93,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | 2026-02-02 |
-| 2. Core Mount & Browse | 0/4 | Ready | - |
+| 2. Core Mount & Browse | 0/4 | Planned | - |
 | 3. File I/O | 0/4 | Not started | - |
 | 4. Configuration & Polish | 0/4 | Not started | - |
 
