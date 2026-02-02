@@ -58,14 +58,19 @@ struct MenuContentView: View {
                 Text("CloudMount")
                     .font(.headline)
                     .fontWeight(.semibold)
-                Text("No buckets mounted")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(appState.isDaemonRunning ? Color.green : Color.red)
+                        .frame(width: 8, height: 8)
+                    Text(appState.isDaemonRunning ? "\(appState.mountedBuckets.count) mounted" : "Daemon offline")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
             Image(systemName: "externaldrive.fill.badge.icloud")
                 .font(.title2)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(appState.isDaemonRunning ? .blue : .secondary)
         }
     }
     
@@ -103,24 +108,54 @@ struct MenuContentView: View {
                 .fontWeight(.semibold)
                 .foregroundStyle(.tertiary)
             
-            if appState.storedBuckets.isEmpty {
+            if appState.bucketConfigs.isEmpty {
                 Text("No buckets configured")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 4)
             } else {
-                ForEach(appState.storedBuckets, id: \.self) { bucket in
+                ForEach(appState.bucketConfigs) { bucket in
                     HStack {
-                        Image(systemName: "folder.fill")
-                            .foregroundStyle(.blue)
-                        Text(bucket)
-                            .font(.subheadline)
+                        Image(systemName: bucket.isMounted ? "externaldrive.fill" : "folder.fill")
+                            .foregroundStyle(bucket.isMounted ? .green : .blue)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(bucket.name)
+                                .font(.subheadline)
+                            if bucket.isMounted {
+                                Text(bucket.mountpoint)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
                         Spacer()
-                        Text("Not mounted")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
+                        Button(bucket.isMounted ? "Unmount" : "Mount") {
+                            Task {
+                                if bucket.isMounted {
+                                    await appState.unmountBucket(bucket)
+                                } else {
+                                    await appState.mountBucket(bucket)
+                                }
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.mini)
+                        .disabled(!appState.isDaemonRunning || !appState.macFUSEInstalled)
                     }
+                    .padding(.vertical, 2)
                 }
+            }
+            
+            // Show error if any
+            if let error = appState.lastError {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                    Text(error)
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+                .padding(.top, 4)
             }
         }
     }
