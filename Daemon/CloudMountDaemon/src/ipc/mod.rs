@@ -1,2 +1,7 @@
 //! IPC server for Swift app communication
-//! Will be implemented in 02-04
+
+pub mod protocol;
+pub mod server;
+
+pub use protocol::{Command, Response, MountInfo, parse_command, serialize_response, SOCKET_PATH, PROTOCOL_VERSION};
+pub use server::IpcServer;

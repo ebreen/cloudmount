@@ -11,22 +11,27 @@ mod mount;
 use anyhow::{anyhow, Result};
 use std::env;
 use std::path::PathBuf;
+use std::sync::Arc;
 use tracing::{error, info, Level};
 use tracing_subscriber::FmtSubscriber;
 
 use b2::B2Client;
+use ipc::IpcServer;
 use mount::MountManager;
 
 /// CLI command
+#[derive(Debug)]
 enum Command {
-    /// Mount a bucket
+    /// Run IPC server mode (default)
+    Server,
+    /// Mount a bucket (CLI mode)
     Mount {
         bucket_name: String,
         mountpoint: PathBuf,
         key_id: String,
         key: String,
     },
-    /// List active mounts
+    /// List active mounts (CLI mode)
     List,
     /// Show help
     Help,
@@ -37,20 +42,25 @@ fn print_help() {
         r#"CloudMount Daemon - Mount Backblaze B2 buckets as local drives
 
 USAGE:
+    cloudmount-daemon                    # Run IPC server (default)
     cloudmount-daemon mount <bucket_name> <mountpoint> <key_id> <key>
     cloudmount-daemon list
     cloudmount-daemon help
 
 COMMANDS:
-    mount   Mount a B2 bucket at the specified path
-    list    List currently mounted buckets
+    (none)  Run IPC server mode (waits for commands from Swift UI)
+    mount   Mount a B2 bucket at the specified path (CLI mode)
+    list    List currently mounted buckets (CLI mode)
     help    Show this help message
 
 EXAMPLES:
-    # Mount a bucket (will prompt for credentials in production)
+    # Run IPC server (default)
+    cloudmount-daemon
+
+    # Mount a bucket (CLI mode for testing)
     cloudmount-daemon mount my-bucket /Volumes/MyBucket 004xxx K004xxx
 
-    # List mounts
+    # List mounts (CLI mode)
     cloudmount-daemon list
 
 ENVIRONMENT:
@@ -59,8 +69,7 @@ ENVIRONMENT:
     RUST_LOG         Log level (trace, debug, info, warn, error)
 
 NOTE:
-    This CLI is for testing. In production, the daemon will be controlled
-    via IPC from the CloudMount Swift app.
+    IPC server mode is the normal operation. CLI commands are for testing.
 "#
     );
 }
@@ -69,7 +78,7 @@ fn parse_args() -> Result<Command> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 2 {
-        return Ok(Command::Help);
+        return Ok(Command::Server);
     }
 
     match args[1].as_str() {
@@ -118,10 +127,37 @@ async fn main() -> Result<()> {
         }
     };
 
-    // Create mount manager
-    let manager = MountManager::new();
+    // Create mount manager wrapped in Arc for sharing
+    let manager = Arc::new(MountManager::new());
 
     match command {
+        Command::Server => {
+            info!("Starting CloudMount daemon in IPC server mode");
+
+            // Create and start IPC server
+            let mut ipc_server = IpcServer::new(Arc::clone(&manager));
+            if let Err(e) = ipc_server.start().await {
+                error!(error = %e, "Failed to start IPC server");
+                return Err(e);
+            }
+
+            info!("Daemon ready. Waiting for commands from Swift UI...");
+
+            // Run IPC server in a separate task
+            let ipc_handle = tokio::spawn(async move {
+                if let Err(e) = ipc_server.run().await {
+                    error!(error = %e, "IPC server error");
+                }
+            });
+
+            // Wait for Ctrl+C
+            tokio::signal::ctrl_c().await?;
+
+            info!("Received shutdown signal, unmounting all buckets...");
+            manager.unmount_all().await;
+
+            info!("Shutdown complete.");
+        }
         Command::Mount {
             bucket_name,
             mountpoint,
