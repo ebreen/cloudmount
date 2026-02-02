@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 2 of 4 (Core Mount & Browse)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 02-01-PLAN.md (Rust daemon foundation)
+Last activity: 2026-02-02 — Completed 02-02-PLAN.md (B2 API client and mount manager)
 
-Progress: [████░░░░░░] 30%
+Progress: [█████░░░░░] 35%
 
 ## Performance Metrics
 
@@ -55,6 +55,10 @@ Recent decisions affecting current work:
 - Phase 2-1: ROOT_INO = 1 per FUSE convention, inodes never recycled for mount lifetime
 - Phase 2-1: Tokio Handle used for async B2 calls within sync FUSE trait methods
 - Phase 2-1: Stub implementation returns directory attrs for unknown inodes (allows navigation before B2 integration)
+- Phase 2-2: Auth tokens expire after 24h - simple auth without refresh for MVP (Phase 3 will add refresh)
+- Phase 2-2: B2 directories simulated via prefix/delimiter (B2 has no true directories)
+- Phase 2-2: MountManager uses tokio::sync::RwLock for concurrent access to mounts map
+- Phase 2-2: CLI interface is temporary for testing - IPC integration in 02-04
 
 ### Pending Todos
 
@@ -69,7 +73,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Completed 02-01-PLAN.md (Rust daemon foundation with FUSE filesystem)
+Stopped at: Completed 02-02-PLAN.md (B2 API client and mount manager)
 Resume file: None
 
 ## Tech Stack (Post-Pivot)
@@ -87,10 +91,12 @@ Resume file: None
 
 **Rust Daemon (FUSE Layer):**
 - `Daemon/CloudMountDaemon/Cargo.toml` - Rust dependencies
-- `Daemon/CloudMountDaemon/src/main.rs` - Daemon entry point
-- `Daemon/CloudMountDaemon/src/fs/b2fs.rs` - FUSE filesystem implementation
+- `Daemon/CloudMountDaemon/src/main.rs` - Daemon entry point with CLI
+- `Daemon/CloudMountDaemon/src/fs/b2fs.rs` - FUSE filesystem with real B2 API
 - `Daemon/CloudMountDaemon/src/fs/inode.rs` - Inode table for path mapping
+- `Daemon/CloudMountDaemon/src/b2/client.rs` - B2 API client with auth
 - `Daemon/CloudMountDaemon/src/b2/types.rs` - B2 API types and conversions
+- `Daemon/CloudMountDaemon/src/mount/manager.rs` - Mount lifecycle management
 
 **Preserved but unused:**
 - `src-tauri/` - Original Tauri backend (preserved for reference)
