@@ -12,7 +12,7 @@ use tokio::sync::RwLock;
 use tracing::{debug, error, info, warn};
 
 use crate::b2::B2Client;
-use crate::ipc::protocol::{Command, MountInfo, Response, parse_command, serialize_response, SOCKET_PATH};
+use crate::ipc::protocol::{Command, MountInfo, BucketInfo, Response, parse_command, serialize_response, SOCKET_PATH};
 use crate::mount::MountManager;
 
 /// IPC Server that listens for commands from the Swift UI
@@ -241,6 +241,30 @@ async fn process_command(
                 version: crate::ipc::protocol::PROTOCOL_VERSION,
                 healthy: true,
                 mounts: mount_infos,
+            }
+        }
+
+        Command::ListBuckets { key_id, key } => {
+            info!("Processing listBuckets command");
+
+            match B2Client::list_all_buckets(&key_id, &key).await {
+                Ok(buckets) => {
+                    let bucket_infos: Vec<BucketInfo> = buckets
+                        .into_iter()
+                        .map(|b| BucketInfo {
+                            bucket_id: b.bucket_id,
+                            bucket_name: b.bucket_name,
+                            bucket_type: b.bucket_type,
+                        })
+                        .collect();
+                    
+                    Response::BucketList { buckets: bucket_infos }
+                }
+                Err(e) => {
+                    Response::Error {
+                        error: format!("Failed to list buckets: {}", e),
+                    }
+                }
             }
         }
     }

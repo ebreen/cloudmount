@@ -35,6 +35,14 @@ pub enum Command {
     },
     /// Get daemon status and list of mounts
     GetStatus,
+    /// List available buckets for the given credentials
+    #[serde(rename_all = "camelCase")]
+    ListBuckets {
+        /// B2 key ID
+        key_id: String,
+        /// B2 application key
+        key: String,
+    },
 }
 
 /// Responses sent from Rust daemon to Swift UI
@@ -63,6 +71,24 @@ pub enum Response {
         /// List of active mounts
         mounts: Vec<MountInfo>,
     },
+    /// List of available buckets
+    #[serde(rename_all = "camelCase")]
+    BucketList {
+        /// Available buckets
+        buckets: Vec<BucketInfo>,
+    },
+}
+
+/// Information about an available bucket (from B2 API)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BucketInfo {
+    /// Bucket ID
+    pub bucket_id: String,
+    /// Bucket name
+    pub bucket_name: String,
+    /// Bucket type (allPublic, allPrivate, etc.)
+    pub bucket_type: String,
 }
 
 /// Information about a mounted bucket (for status response)

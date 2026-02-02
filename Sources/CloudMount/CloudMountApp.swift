@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct CloudMountApp: App {
     @StateObject private var appState = AppState()
+    @Environment(\.openWindow) private var openWindow
     
     var body: some Scene {
         MenuBarExtra {
@@ -14,23 +15,16 @@ struct CloudMountApp: App {
         }
         .menuBarExtraStyle(.window)
         
-        Settings {
+        // Use Window instead of Settings to fix text field focus bug
+        Window("CloudMount Settings", id: "settings") {
             SettingsView()
                 .environmentObject(appState)
                 .onAppear {
-                    // Bring settings window to front and make it key
                     NSApplication.shared.activate(ignoringOtherApps: true)
-                    // Find and make the settings window key
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        for window in NSApplication.shared.windows {
-                            if window.title.contains("Settings") || window.identifier?.rawValue.contains("settings") == true {
-                                window.makeKeyAndOrderFront(nil)
-                                break
-                            }
-                        }
-                    }
                 }
         }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
     }
 }
 

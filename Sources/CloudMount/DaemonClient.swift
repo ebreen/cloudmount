@@ -34,6 +34,15 @@ struct DaemonMountInfo: Codable {
     let mountpoint: String
 }
 
+/// Information about an available bucket from B2
+struct DaemonBucketInfo: Codable, Identifiable {
+    let bucketId: String
+    let bucketName: String
+    let bucketType: String
+    
+    var id: String { bucketId }
+}
+
 /// Response from the daemon
 struct DaemonResponse: Codable {
     let type: String
@@ -42,6 +51,7 @@ struct DaemonResponse: Codable {
     let version: Int?
     let healthy: Bool?
     let mounts: [DaemonMountInfo]?
+    let buckets: [DaemonBucketInfo]?
 }
 
 /// Client for communicating with the Rust daemon via Unix socket
@@ -108,6 +118,23 @@ actor DaemonClient {
         if response.type == "error", let error = response.error {
             throw DaemonError.daemonError(error)
         }
+    }
+    
+    /// List all available buckets for the given credentials
+    func listBuckets(keyId: String, key: String) async throws -> [DaemonBucketInfo] {
+        let command: [String: Any] = [
+            "type": "listBuckets",
+            "keyId": keyId,
+            "key": key
+        ]
+        
+        let response = try await sendCommand(command)
+        
+        if response.type == "error", let error = response.error {
+            throw DaemonError.daemonError(error)
+        }
+        
+        return response.buckets ?? []
     }
     
     // MARK: - Private

@@ -22,7 +22,7 @@ struct MenuButtonStyle: ButtonStyle {
 
 struct MenuContentView: View {
     @EnvironmentObject var appState: AppState
-    @Environment(\.openSettings) private var openSettings
+    @Environment(\.openWindow) private var openWindow
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -163,7 +163,8 @@ struct MenuContentView: View {
     private var actionsSection: some View {
         VStack(spacing: 2) {
             Button {
-                openSettings()
+                openWindow(id: "settings")
+                NSApplication.shared.activate(ignoringOtherApps: true)
             } label: {
                 HStack {
                     Image(systemName: "gear")

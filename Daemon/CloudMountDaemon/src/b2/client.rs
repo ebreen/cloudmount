@@ -62,11 +62,20 @@ struct ListBucketsResponse {
     buckets: Vec<BucketInfo>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct BucketInfo {
     bucket_id: String,
     bucket_name: String,
+    bucket_type: String,
+}
+
+/// Public bucket info for returning to clients
+#[derive(Debug, Clone)]
+pub struct B2BucketInfo {
+    pub bucket_id: String,
+    pub bucket_name: String,
+    pub bucket_type: String,
 }
 
 /// Request body for b2_list_file_names API
@@ -144,6 +153,83 @@ impl B2Client {
         
         info!(bucket_name = bucket_name, bucket_id = %client.bucket_id, "B2 client ready");
         Ok(client)
+    }
+    
+    /// List all available buckets for the account
+    ///
+    /// # Arguments
+    /// * `key_id` - B2 application key ID
+    /// * `key` - B2 application key
+    ///
+    /// # Returns
+    /// Vector of available buckets
+    pub async fn list_all_buckets(key_id: &str, key: &str) -> Result<Vec<B2BucketInfo>> {
+        info!("Listing all buckets from B2...");
+        
+        let http_client = Client::builder()
+            .timeout(REQUEST_TIMEOUT)
+            .build()
+            .context("Failed to create HTTP client")?;
+        
+        // Create Basic Auth header
+        let credentials = format!("{}:{}", key_id, key);
+        let encoded = base64::engine::general_purpose::STANDARD.encode(credentials);
+        let auth_header = format!("Basic {}", encoded);
+        
+        // Authorize with B2
+        let response = http_client
+            .get(B2_AUTH_URL)
+            .header("Authorization", &auth_header)
+            .send()
+            .await
+            .context("Failed to connect to B2 API")?;
+        
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(anyhow!("B2 authorization failed ({}): {}", status, body));
+        }
+        
+        let auth_response: AuthorizeAccountResponse = response
+            .json()
+            .await
+            .context("Failed to parse B2 auth response")?;
+        
+        let api_url = auth_response.api_info.storage_api.api_url;
+        let url = format!("{}/b2api/v2/b2_list_buckets", api_url);
+        
+        let response = http_client
+            .post(&url)
+            .header("Authorization", &auth_response.authorization_token)
+            .json(&serde_json::json!({
+                "accountId": auth_response.account_id
+            }))
+            .send()
+            .await
+            .context("Failed to list buckets")?;
+        
+        if !response.status().is_success() {
+            let status = response.status();
+            let body = response.text().await.unwrap_or_default();
+            return Err(anyhow!("Failed to list buckets ({}): {}", status, body));
+        }
+        
+        let list_response: ListBucketsResponse = response
+            .json()
+            .await
+            .context("Failed to parse bucket list")?;
+        
+        let buckets: Vec<B2BucketInfo> = list_response.buckets
+            .into_iter()
+            .map(|b| B2BucketInfo {
+                bucket_id: b.bucket_id,
+                bucket_name: b.bucket_name,
+                bucket_type: b.bucket_type,
+            })
+            .collect();
+        
+        info!(count = buckets.len(), "Listed buckets from B2");
+        Ok(buckets)
     }
     
     /// Look up bucket ID from bucket name

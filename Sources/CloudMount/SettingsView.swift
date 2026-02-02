@@ -35,6 +35,7 @@ struct CredentialsPane: View {
     @State private var showKey = false
     @State private var isConnecting = false
     @State private var connectionStatus: ConnectionStatus = .notConnected
+    @State private var availableBuckets: [DaemonBucketInfo] = []
     
     enum ConnectionStatus: Equatable {
         case notConnected
@@ -209,22 +210,29 @@ struct CredentialsPane: View {
                 // Save credentials first
                 try CredentialStore.shared.saveB2Credentials(keyId: keyId, applicationKey: applicationKey)
                 
-                // Try to list buckets via daemon
-                // For now, simulate - in real implementation, daemon would list buckets
-                // The daemon needs a "listBuckets" command
-                
-                // Simulate connection delay
-                try await Task.sleep(for: .milliseconds(500))
+                // List buckets via daemon
+                let buckets = try await DaemonClient.shared.listBuckets(keyId: keyId, key: applicationKey)
                 
                 await MainActor.run {
                     isConnecting = false
-                    // For now, show placeholder - real implementation needs daemon bucket listing
-                    connectionStatus = .connected(bucketCount: appState.bucketConfigs.count)
+                    availableBuckets = buckets
+                    connectionStatus = .connected(bucketCount: buckets.count)
+                    
+                    // Auto-add all buckets to config if not already present
+                    for bucket in buckets {
+                        if !appState.bucketConfigs.contains(where: { $0.name == bucket.bucketName }) {
+                            appState.addBucket(name: bucket.bucketName, mountpoint: "/Volumes/\(bucket.bucketName)")
+                        }
+                    }
                 }
             } catch {
                 await MainActor.run {
                     isConnecting = false
-                    connectionStatus = .error(error.localizedDescription)
+                    if case DaemonError.daemonNotRunning = error {
+                        connectionStatus = .error("Daemon not running. Start it with: cd Daemon/CloudMountDaemon && cargo run")
+                    } else {
+                        connectionStatus = .error(error.localizedDescription)
+                    }
                 }
             }
         }
