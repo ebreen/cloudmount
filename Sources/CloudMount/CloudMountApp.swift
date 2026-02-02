@@ -17,6 +17,10 @@ struct CloudMountApp: App {
         Settings {
             SettingsView()
                 .environmentObject(appState)
+                .onAppear {
+                    // Bring settings window to front
+                    NSApplication.shared.activate(ignoringOtherApps: true)
+                }
         }
     }
 }

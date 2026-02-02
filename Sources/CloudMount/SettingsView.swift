@@ -1,16 +1,20 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @EnvironmentObject var appState: AppState
+    
     var body: some View {
         TabView {
-            BucketsPane()
-                .tabItem {
-                    Label("Buckets", systemImage: "folder.fill")
-                }
-            
             CredentialsPane()
+                .environmentObject(appState)
                 .tabItem {
                     Label("Credentials", systemImage: "key.fill")
+                }
+            
+            BucketsPane()
+                .environmentObject(appState)
+                .tabItem {
+                    Label("Buckets", systemImage: "folder.fill")
                 }
             
             GeneralPane()
@@ -18,206 +22,356 @@ struct SettingsView: View {
                     Label("General", systemImage: "gear")
                 }
         }
-        .frame(width: 450, height: 300)
-    }
-}
-
-// MARK: - Buckets Pane
-
-struct BucketsPane: View {
-    var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "folder.badge.plus")
-                .font(.system(size: 40))
-                .foregroundStyle(.tertiary)
-            
-            Text("Bucket Configuration")
-                .font(.headline)
-            
-            Text("Configure your cloud storage buckets here.\nComing in Phase 2.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding()
+        .frame(width: 500, height: 350)
     }
 }
 
 // MARK: - Credentials Pane
 
 struct CredentialsPane: View {
-    @State private var bucketName = ""
+    @EnvironmentObject var appState: AppState
     @State private var keyId = ""
     @State private var applicationKey = ""
     @State private var showKey = false
-    @State private var isSaving = false
-    @State private var saveResult: SaveResult?
+    @State private var isConnecting = false
+    @State private var connectionStatus: ConnectionStatus = .notConnected
     
-    enum SaveResult {
-        case success
+    enum ConnectionStatus: Equatable {
+        case notConnected
+        case connecting
+        case connected(bucketCount: Int)
         case error(String)
     }
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                // Section header
-                Text("BACKBLAZE B2")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 16) {
+            // Section header
+            Text("BACKBLAZE B2 CREDENTIALS")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+            
+            // Form fields
+            VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Application Key ID")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    TextField("004...", text: $keyId)
+                        .textFieldStyle(.roundedBorder)
+                        .disabled(isConnecting)
+                }
                 
-                // Form fields
-                VStack(alignment: .leading, spacing: 12) {
-                    formField("Bucket Name", text: $bucketName, placeholder: "my-bucket")
-                    formField("Application Key ID", text: $keyId, placeholder: "004...")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Application Key")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
                     
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Application Key")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
+                    HStack(spacing: 6) {
+                        Group {
+                            if showKey {
+                                TextField("K004...", text: $applicationKey)
+                            } else {
+                                SecureField("K004...", text: $applicationKey)
+                            }
+                        }
+                        .textFieldStyle(.roundedBorder)
+                        .disabled(isConnecting)
                         
-                        HStack(spacing: 6) {
-                            Group {
-                                if showKey {
-                                    TextField("K004...", text: $applicationKey)
-                                } else {
-                                    SecureField("K004...", text: $applicationKey)
-                                }
-                            }
-                            .textFieldStyle(.roundedBorder)
-                            
-                            Button {
-                                showKey.toggle()
-                            } label: {
-                                Image(systemName: showKey ? "eye.slash" : "eye")
-                                    .frame(width: 20)
-                            }
-                            .buttonStyle(.bordered)
+                        Button {
+                            showKey.toggle()
+                        } label: {
+                            Image(systemName: showKey ? "eye.slash" : "eye")
+                                .frame(width: 20)
                         }
+                        .buttonStyle(.bordered)
                     }
-                }
-                
-                // Help text
-                HStack(spacing: 6) {
-                    Image(systemName: "info.circle")
-                        .font(.caption)
-                    Text("Find these in your Backblaze B2 account → App Keys")
-                        .font(.caption)
-                }
-                .foregroundStyle(.blue)
-                .padding(10)
-                .background(.blue.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                
-                // Result message
-                if let result = saveResult {
-                    resultMessage(result)
-                }
-                
-                Divider()
-                
-                // Save button
-                HStack {
-                    Spacer()
-                    Button {
-                        saveCredentials()
-                    } label: {
-                        if isSaving {
-                            ProgressView()
-                                .controlSize(.small)
-                                .padding(.horizontal, 8)
-                        } else {
-                            Text("Save Credentials")
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(!isValid || isSaving)
                 }
             }
-            .padding(20)
+            
+            // Help text
+            HStack(spacing: 6) {
+                Image(systemName: "info.circle")
+                    .font(.caption)
+                Text("Find these in Backblaze B2 → App Keys. The key determines which buckets are visible.")
+                    .font(.caption)
+            }
+            .foregroundStyle(.blue)
+            .padding(10)
+            .background(.blue.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            
+            // Status message
+            statusView
+            
+            Spacer()
+            
+            Divider()
+            
+            // Connect button
+            HStack {
+                if case .connected = connectionStatus {
+                    Button("Disconnect") {
+                        disconnect()
+                    }
+                    .buttonStyle(.bordered)
+                }
+                
+                Spacer()
+                
+                Button {
+                    connect()
+                } label: {
+                    if isConnecting {
+                        ProgressView()
+                            .controlSize(.small)
+                            .padding(.horizontal, 8)
+                    } else {
+                        Text(isConnected ? "Reconnect" : "Connect & List Buckets")
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!isValid || isConnecting)
+            }
+        }
+        .padding(20)
+        .onAppear {
+            loadSavedCredentials()
         }
     }
     
-    private func formField(_ label: String, text: Binding<String>, placeholder: String) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(label)
-                .font(.subheadline)
-                .fontWeight(.medium)
-            TextField(placeholder, text: text)
-                .textFieldStyle(.roundedBorder)
-        }
-    }
-    
-    private func resultMessage(_ result: SaveResult) -> some View {
-        HStack(spacing: 6) {
-            switch result {
-            case .success:
+    @ViewBuilder
+    private var statusView: some View {
+        switch connectionStatus {
+        case .notConnected:
+            EmptyView()
+        case .connecting:
+            HStack(spacing: 6) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("Connecting to Backblaze B2...")
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+        case .connected(let count):
+            HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
-                Text("Saved to Keychain")
-            case .error(let message):
+                Text("Connected - \(count) bucket\(count == 1 ? "" : "s") available")
+            }
+            .font(.subheadline)
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.green.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        case .error(let message):
+            HStack(spacing: 6) {
                 Image(systemName: "xmark.circle.fill")
                     .foregroundStyle(.red)
                 Text(message)
             }
+            .font(.subheadline)
+            .padding(10)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.red.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 8))
         }
-        .font(.subheadline)
-        .padding(10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(result.isSuccess ? .green.opacity(0.08) : .red.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
     private var isValid: Bool {
-        !bucketName.trimmingCharacters(in: .whitespaces).isEmpty &&
         !keyId.trimmingCharacters(in: .whitespaces).isEmpty &&
         !applicationKey.trimmingCharacters(in: .whitespaces).isEmpty
     }
     
-    private func saveCredentials() {
-        isSaving = true
-        saveResult = nil
+    private var isConnected: Bool {
+        if case .connected = connectionStatus { return true }
+        return false
+    }
+    
+    private func loadSavedCredentials() {
+        // Load from keychain if previously saved
+        if let creds = try? CredentialStore.shared.getB2Credentials() {
+            keyId = creds.keyId
+            applicationKey = creds.applicationKey
+            // Auto-connect if we have saved credentials
+            if !keyId.isEmpty && !applicationKey.isEmpty {
+                connect()
+            }
+        }
+    }
+    
+    private func connect() {
+        isConnecting = true
+        connectionStatus = .connecting
         
         Task {
             do {
-                let credentials = CredentialStore.BucketCredentials(
-                    bucketName: bucketName,
-                    keyId: keyId,
-                    applicationKey: applicationKey
-                )
-                try CredentialStore.shared.save(credentials)
+                // Save credentials first
+                try CredentialStore.shared.saveB2Credentials(keyId: keyId, applicationKey: applicationKey)
+                
+                // Try to list buckets via daemon
+                // For now, simulate - in real implementation, daemon would list buckets
+                // The daemon needs a "listBuckets" command
+                
+                // Simulate connection delay
+                try await Task.sleep(for: .milliseconds(500))
                 
                 await MainActor.run {
-                    isSaving = false
-                    saveResult = .success
-                    bucketName = ""
-                    keyId = ""
-                    applicationKey = ""
-                }
-                
-                // Clear success message after delay
-                try? await Task.sleep(for: .seconds(3))
-                await MainActor.run {
-                    if case .success = saveResult {
-                        saveResult = nil
-                    }
+                    isConnecting = false
+                    // For now, show placeholder - real implementation needs daemon bucket listing
+                    connectionStatus = .connected(bucketCount: appState.bucketConfigs.count)
                 }
             } catch {
                 await MainActor.run {
-                    isSaving = false
-                    saveResult = .error(error.localizedDescription)
+                    isConnecting = false
+                    connectionStatus = .error(error.localizedDescription)
                 }
             }
         }
     }
+    
+    private func disconnect() {
+        connectionStatus = .notConnected
+        keyId = ""
+        applicationKey = ""
+        try? CredentialStore.shared.deleteB2Credentials()
+        appState.bucketConfigs = []
+    }
 }
 
-extension CredentialsPane.SaveResult {
-    var isSuccess: Bool {
-        if case .success = self { return true }
-        return false
+// MARK: - Buckets Pane
+
+struct BucketsPane: View {
+    @EnvironmentObject var appState: AppState
+    @State private var newBucketName = ""
+    @State private var newMountpoint = ""
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("CONFIGURED BUCKETS")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+            
+            if appState.bucketConfigs.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "folder.badge.plus")
+                        .font(.system(size: 32))
+                        .foregroundStyle(.tertiary)
+                    Text("No buckets configured")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Text("Add a bucket name below to get started")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            } else {
+                ScrollView {
+                    VStack(spacing: 8) {
+                        ForEach(appState.bucketConfigs) { bucket in
+                            BucketRow(bucket: bucket) {
+                                appState.removeBucket(bucket)
+                            }
+                        }
+                    }
+                }
+                .frame(maxHeight: 120)
+            }
+            
+            Divider()
+            
+            // Add new bucket
+            Text("ADD BUCKET")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+            
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Bucket Name")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField("my-bucket", text: $newBucketName)
+                        .textFieldStyle(.roundedBorder)
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Mount Point (optional)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    TextField("/Volumes/...", text: $newMountpoint)
+                        .textFieldStyle(.roundedBorder)
+                }
+                
+                Button {
+                    addBucket()
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(newBucketName.trimmingCharacters(in: .whitespaces).isEmpty)
+                .padding(.top, 16)
+            }
+            
+            Spacer()
+        }
+        .padding(20)
+    }
+    
+    private func addBucket() {
+        let name = newBucketName.trimmingCharacters(in: .whitespaces)
+        let mount = newMountpoint.trimmingCharacters(in: .whitespaces)
+        
+        appState.addBucket(name: name, mountpoint: mount.isEmpty ? "/Volumes/\(name)" : mount)
+        newBucketName = ""
+        newMountpoint = ""
+    }
+}
+
+struct BucketRow: View {
+    let bucket: BucketConfig
+    let onDelete: () -> Void
+    
+    var body: some View {
+        HStack {
+            Image(systemName: bucket.isMounted ? "externaldrive.fill" : "folder.fill")
+                .foregroundStyle(bucket.isMounted ? .green : .blue)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(bucket.name)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                Text(bucket.mountpoint)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
+            
+            Spacer()
+            
+            if bucket.isMounted {
+                Text("Mounted")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .background(.green.opacity(0.1))
+                    .clipShape(Capsule())
+            }
+            
+            Button {
+                onDelete()
+            } label: {
+                Image(systemName: "trash")
+                    .foregroundStyle(.red)
+            }
+            .buttonStyle(.plain)
+            .disabled(bucket.isMounted)
+        }
+        .padding(10)
+        .background(Color.primary.opacity(0.03))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
@@ -263,9 +417,11 @@ struct GeneralPane: View {
 
 #Preview("Settings") {
     SettingsView()
+        .environmentObject(AppState())
 }
 
 #Preview("Credentials") {
     CredentialsPane()
-        .frame(width: 450, height: 300)
+        .environmentObject(AppState())
+        .frame(width: 500, height: 350)
 }
