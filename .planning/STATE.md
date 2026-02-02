@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 1 of 4 (Foundation)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 01-01-PLAN.md (Tauri menu bar app foundation)
+Last activity: 2026-02-02 — Completed 01-02-PLAN.md (macFUSE detection)
 
-Progress: [██░░░░░░░░] 6%
+Progress: [███░░░░░░░] 12%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 8 min
-- Total execution time: 0.13 hours
+- Total plans completed: 2
+- Average duration: 11 min
+- Total execution time: 0.35 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 1/4 | 8 min | 8 min |
+| 01-foundation | 2/4 | 21 min | 10.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (8 min)
-- Trend: Baseline established
+- Last 5 plans: 01-01 (8 min), 01-02 (13 min)
+- Trend: Consistent velocity
 
 *Updated after each plan completion*
 
@@ -47,6 +47,9 @@ Recent decisions affecting current work:
 - 01-01: Used Tauri v2 instead of v1 for better tray-icon support and modern APIs
 - 01-01: Menu bar app uses ActivationPolicy::Accessory to hide dock icon on macOS
 - 01-01: Event-driven window creation pattern (backend emits, frontend creates windows)
+- 01-02: Check both /Library and /System/Library paths for macFUSE installation
+- 01-02: Re-check macFUSE status every 5 seconds when not installed
+- 01-02: Use @tauri-apps/plugin-opener for browser integration (Tauri v2 pattern)
 
 ### Pending Todos
 
@@ -59,6 +62,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 12:45
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-02-02 12:50
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
