@@ -1,2 +1,5 @@
 //! Mount manager for FUSE lifecycle
-//! Will be implemented in 02-02
+
+pub mod manager;
+
+pub use manager::{MountInfo, MountManager};
