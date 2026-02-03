@@ -77,11 +77,8 @@ impl MountManager {
             "Mounting bucket..."
         );
         
-        // Create mountpoint directory if needed
-        if !mountpoint.exists() {
-            std::fs::create_dir_all(&mountpoint)
-                .context("Failed to create mountpoint directory")?;
-        }
+        // Note: With FSKit backend, macFUSE handles mount point creation in /Volumes
+        // Do NOT try to create the directory ourselves — /Volumes requires root
         
         // Build the filesystem
         let filesystem = B2Filesystem::new(bucket_id.clone(), b2_client);
@@ -89,35 +86,44 @@ impl MountManager {
         // Configure mount options
         let options = vec![
             MountOption::FSName(format!("cloudmount-{}", bucket_name)),
-            MountOption::AllowOther,  // Allow other users to access (needed for /Volumes)
-            MountOption::NoAtime,     // Don't update access times (performance)
-            MountOption::AutoUnmount, // Auto-unmount on process exit
+            MountOption::CUSTOM("volname=CloudMount - ".to_string() + &bucket_name),
         ];
         
         let mp = mountpoint.clone();
         let bid = bucket_id.clone();
         let bname = bucket_name.clone();
         
+        // Use a channel to capture mount errors from the blocking task
+        let (tx, rx) = tokio::sync::oneshot::channel::<Option<String>>();
+        
         // Spawn FUSE mount in a blocking task (fuser is sync)
         let task = tokio::task::spawn_blocking(move || {
-            info!(bucket = %bname, "Starting FUSE session...");
+            info!(bucket = %bname, mountpoint = %mp.display(), "Starting FUSE session...");
             
             match fuser::mount2(filesystem, &mp, &options) {
                 Ok(()) => {
                     info!(bucket = %bname, "FUSE session ended normally");
+                    let _ = tx.send(None);
                 }
                 Err(e) => {
-                    error!(bucket = %bname, error = %e, "FUSE session failed");
+                    error!(bucket = %bname, error = %e, "FUSE mount failed");
+                    let _ = tx.send(Some(format!("{}", e)));
                 }
             }
         });
         
         // Give the mount a moment to initialize
-        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
         
-        // Check if the mount task is still running
+        // Check if the mount task failed immediately
         if task.is_finished() {
-            return Err(anyhow!("Mount failed to start - check if macFUSE is installed"));
+            // Try to get the actual error
+            let error_msg = match rx.await {
+                Ok(Some(e)) => format!("FUSE mount failed: {}", e),
+                Ok(None) => "FUSE session ended unexpectedly".to_string(),
+                Err(_) => "Mount task failed (no error captured)".to_string(),
+            };
+            return Err(anyhow!(error_msg));
         }
         
         // Store the mount handle

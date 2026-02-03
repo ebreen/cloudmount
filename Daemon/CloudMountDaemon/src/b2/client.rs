@@ -11,8 +11,8 @@ use tracing::{debug, info, warn};
 
 use super::types::{FileInfo, ListFilesResponse};
 
-/// B2 API base URL for authorization
-const B2_AUTH_URL: &str = "https://api.backblazeb2.com/b2api/v2/b2_authorize_account";
+/// B2 API base URL for authorization (v3 for nested apiInfo structure)
+const B2_AUTH_URL: &str = "https://api.backblazeb2.com/b2api/v3/b2_authorize_account";
 
 /// HTTP client timeout
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
