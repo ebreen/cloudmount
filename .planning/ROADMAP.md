@@ -77,13 +77,11 @@ Plans:
   2. User can configure bucket name and mount point through settings
   3. Status bar menu shows disk usage for each mounted bucket
   4. Settings window provides complete configuration management
-**Plans**: TBD
+**Plans**: 2 plans in 2 waves
 
 Plans:
-- [ ] 04-01: Build credentials configuration form in settings
-- [ ] 04-02: Implement bucket and mount point configuration
-- [ ] 04-03: Add disk usage calculation and display in menu
-- [ ] 04-04: Polish UI interactions and error feedback
+- [ ] 04-01-PLAN.md — Bucket config persistence and disk usage IPC protocol
+- [ ] 04-02-PLAN.md — Disk usage display in menu and settings polish
 
 ## Progress
 
