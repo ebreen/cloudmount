@@ -22,7 +22,7 @@ struct SettingsView: View {
                     Label("General", systemImage: "gear")
                 }
         }
-        .frame(width: 500, height: 350)
+        .frame(width: 500, height: 380)
     }
 }
 
@@ -311,6 +311,9 @@ struct BucketsPane: View {
                         .foregroundStyle(.secondary)
                     TextField("/Volumes/...", text: $newMountpoint)
                         .textFieldStyle(.roundedBorder)
+                    Text("Must be an absolute path (e.g., /Volumes/my-bucket)")
+                        .font(.caption2)
+                        .foregroundStyle(.quaternary)
                 }
                 
                 Button {
@@ -330,9 +333,17 @@ struct BucketsPane: View {
     
     private func addBucket() {
         let name = newBucketName.trimmingCharacters(in: .whitespaces)
-        let mount = newMountpoint.trimmingCharacters(in: .whitespaces)
+        var mount = newMountpoint.trimmingCharacters(in: .whitespaces)
         
-        appState.addBucket(name: name, mountpoint: mount.isEmpty ? "/Volumes/\(name)" : mount)
+        // Default to /Volumes/{name} if empty
+        if mount.isEmpty {
+            mount = "/Volumes/\(name)"
+        } else if !mount.hasPrefix("/") {
+            // Ensure absolute path — prepend /Volumes/ if not absolute
+            mount = "/Volumes/\(mount)"
+        }
+        
+        appState.addBucket(name: name, mountpoint: mount)
         newBucketName = ""
         newMountpoint = ""
     }
