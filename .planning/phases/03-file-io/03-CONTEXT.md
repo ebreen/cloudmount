@@ -13,11 +13,19 @@ Users can read, write, and delete files through the mounted FUSE volume. This ph
 <decisions>
 ## Implementation Decisions
 
+### API call efficiency (CRITICAL)
+- B2 Class C transactions (listing/metadata) hit 7,320 in a single day from mount/browse testing alone — free tier is 2,500/day
+- Every FUSE operation that translates to a B2 API call must be scrutinized
+- Aggressive caching is essential — researcher must investigate optimal cache TTLs, batch listing strategies, and ways to minimize redundant API calls
+- Finder is extremely chatty (thumbnails, Quick Look, Spotlight) — FUSE implementation must handle this without amplifying API calls
+- Phase 3 adds read/write/delete operations on top of existing listing overhead — must not make the problem worse
+- Consider: coalescing requests, longer cache TTLs, suppressing macOS-specific metadata requests (.DS_Store, ._files, Spotlight queries)
+
 ### File read & caching
-- Read strategy (stream vs full download, caching approach): OpenCode's discretion based on research
+- Read strategy (stream vs full download, caching approach): OpenCode's discretion based on research — but must factor in API call budget
 - Must support any file size — no artificial limits
 - Staleness handling (what happens when remote changes while file is open): OpenCode's discretion
-- Local caching policy (expiry, eviction): OpenCode's discretion
+- Local caching policy (expiry, eviction): OpenCode's discretion — lean toward longer TTLs given API call concerns
 
 ### Write & save behavior
 - New file creation: fully supported — users can create files directly on the mount
@@ -49,6 +57,7 @@ Users can read, write, and delete files through the mounted FUSE volume. This ph
 - Delete semantics (permanent delete vs macOS Trash support)
 - Exact status bar UI for operation feedback
 - Temp file management during writes
+- Strategies to minimize B2 API calls (request coalescing, negative caching, Finder noise suppression)
 
 </decisions>
 
@@ -59,6 +68,7 @@ Users can read, write, and delete files through the mounted FUSE volume. This ph
 - Status bar should show activity for both uploads and deletes — user always knows what's happening
 - Error messages should be informative and developer-friendly, not dumbed down
 - Connection health should be visible at a glance from the status bar icon
+- API efficiency is a first-class concern — observed 7,320 Class C transactions from Phase 2 testing alone (see B2 caps screenshot, 2026-02-03). Researcher should study how other FUSE+S3 implementations (rclone, s3fs, goofys) minimize API calls
 
 </specifics>
 
