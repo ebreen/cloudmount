@@ -93,7 +93,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation | 4/4 | Complete | 2026-02-02 |
 | 2. Core Mount & Browse | 0/4 | Planned | - |
 | 3. File I/O | 0/4 | Planned | - |
-| 4. Configuration & Polish | 0/4 | Not started | - |
+| 4. Configuration & Polish | 0/2 | Planned | - |
 
 ---
 *Roadmap created: 2026-02-02*
