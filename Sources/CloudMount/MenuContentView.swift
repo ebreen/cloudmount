@@ -24,6 +24,16 @@ struct MenuContentView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.openWindow) private var openWindow
     
+    /// Color for the connection health indicator
+    private var healthColor: Color {
+        if !appState.isDaemonRunning { return .red }
+        switch appState.connectionHealth {
+        case "degraded": return .yellow
+        case "unhealthy": return .red
+        default: return .green
+        }
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header
@@ -60,7 +70,7 @@ struct MenuContentView: View {
                     .fontWeight(.semibold)
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(appState.isDaemonRunning ? Color.green : Color.red)
+                        .fill(healthColor)
                         .frame(width: 8, height: 8)
                     Text(appState.isDaemonRunning ? "\(appState.mountedBuckets.count) mounted" : "Daemon offline")
                         .font(.subheadline)
@@ -122,9 +132,14 @@ struct MenuContentView: View {
                             Text(bucket.name)
                                 .font(.subheadline)
                             if bucket.isMounted {
-                                Text(bucket.mountpoint)
-                                    .font(.caption2)
-                                    .foregroundStyle(.tertiary)
+                                HStack(spacing: 0) {
+                                    Text(bucket.mountpoint)
+                                    if let bytes = bucket.totalBytesUsed {
+                                        Text(" · \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))")
+                                    }
+                                }
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
                             }
                         }
                         Spacer()
@@ -156,6 +171,28 @@ struct MenuContentView: View {
                         .foregroundStyle(.red)
                 }
                 .padding(.top, 4)
+            }
+            
+            // Show recent errors from daemon
+            if !appState.recentErrors.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("RECENT ERRORS")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.tertiary)
+                    ForEach(appState.recentErrors.suffix(3), id: \.timestamp) { err in
+                        HStack(spacing: 4) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.orange)
+                                .font(.caption2)
+                            Text("\(err.operation): \(err.error)")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                }
+                .padding(.top, 6)
             }
         }
     }
