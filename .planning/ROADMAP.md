@@ -63,10 +63,10 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 03-01: Implement file read with S3 range requests
-- [ ] 03-02: Implement file write with multipart upload
-- [ ] 03-03: Implement file delete operation
-- [ ] 03-04: Add error handling for network and S3 failures
+- [ ] 03-01: File Read with Local Caching & API Minimization (Wave 1)
+- [ ] 03-02: File Write with Upload on Close (Wave 2)
+- [ ] 03-03: File Delete, Mkdir, and Rename Operations (Wave 2)
+- [ ] 03-04: Error Handling, Retry Logic, and Connection Health (Wave 3)
 
 ### Phase 4: Configuration & Polish
 **Goal**: Users can configure buckets through the UI and see complete status information
@@ -94,7 +94,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | 2026-02-02 |
 | 2. Core Mount & Browse | 0/4 | Planned | - |
-| 3. File I/O | 0/4 | Not started | - |
+| 3. File I/O | 0/4 | Planned | - |
 | 4. Configuration & Polish | 0/4 | Not started | - |
 
 ---

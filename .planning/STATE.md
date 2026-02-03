@@ -5,24 +5,36 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Users can mount cloud storage buckets as local drives and access them seamlessly in Finder with a beautiful status bar interface for management.
-**Current focus:** Phase 2 - Core Mount & Browse
+**Current focus:** Phase 3 - File I/O
 
 ## Current Position
 
-Phase: 2 of 4 (Core Mount & Browse)
-Plan: 4 of 4 in current phase
-Status: **CHECKPOINT - Bug fix needed before verification**
-Last activity: 2026-02-02 — All 4 plans executed, fixing B2 API bug
+Phase: 3 of 4 (File I/O)
+Plan: 0 of 4 in current phase
+Status: **PLANNED — READY TO EXECUTE**
+Last activity: 2026-02-03 — Phase 3 researched and planned (4 plans in 3 waves)
 
-Progress: [███████░░░] 45%
+Progress: [████████░░] 50%
 
-## Active Bug (Must Fix)
+## Phase 3 Plans
 
-**B2 API parsing error in `list_all_buckets`**
-- Error: "failed to parse b2 auth response"
-- Location: `Daemon/CloudMountDaemon/src/b2/client.rs` in `list_all_buckets()` function
-- Cause: B2 API response structure doesn't match our AuthorizeAccountResponse struct
-- Fix: Check actual B2 API docs for `b2_authorize_account` response format
+Wave 1:
+- [ ] 03-01: File Read with Local Caching & API Minimization
+
+Wave 2 (parallel):
+- [ ] 03-02: File Write with Upload on Close
+- [ ] 03-03: File Delete, Mkdir, and Rename Operations
+
+Wave 3:
+- [ ] 03-04: Error Handling, Retry Logic, and Connection Health
+
+## Bug Fixed (Verified)
+
+**B2 API parsing error in `list_all_buckets`** — RESOLVED & VERIFIED
+- Root cause: API version mismatch (v2 flat response vs v3 nested struct)
+- Fix: Changed API URL from v2 to v3 in `client.rs`
+- See: `.planning/debug/b2-api-parsing.md`
+- Human verified: 2026-02-02
 
 ## What's Complete
 
@@ -35,9 +47,9 @@ Progress: [███████░░░] 45%
 
 ## What's Left
 
-1. **Fix B2 API parsing bug** - The `list_all_buckets` function fails to parse B2 response
-2. **Human verification checkpoint** - Test mount/unmount flow end-to-end
-3. **Phase verification** - Run verifier after checkpoint passes
+1. **Execute Phase 3 plans** (03-01 through 03-04)
+2. Phase 3 verification
+3. Phase 4 planning and execution
 
 ## Performance Metrics
 
@@ -62,17 +74,23 @@ Progress: [███████░░░] 45%
 - Phase 2: Global B2 credentials (not per-bucket) - authenticate once, list all buckets
 - Phase 2: Window scene instead of Settings scene (fixes text field focus bug)
 - Phase 2: moka::sync::Cache for FUSE callback compatibility (not async)
+- Phase 3: Write locally, upload sync on close (MVP). Async upload deferred.
+- Phase 3: Suppress macOS metadata files (.DS_Store, ._*, Spotlight, Trashes) in FUSE lookup
+- Phase 3: Permanent delete (ignore B2 versioning)
+- Phase 3: Rename via server-side copy + delete (not atomic, acceptable for MVP)
+- Phase 3: New crates: sha1, tempfile, urlencoding, dirs
 
 ### Blockers/Concerns
 
-- B2 API response parsing needs fixing
-- macFUSE kernel extension may require Recovery Mode on some macOS versions
+- ~~B2 API response parsing needs fixing~~ — FIXED
+- ~~macFUSE kernel extension may require Recovery Mode~~ — RESOLVED
+- **API call budget**: 7,320 Class C transactions/day from browse-only testing (free tier: 2,500/day). Phase 3 adds reads (Class B) and writes (Class A, free). Metadata suppression in 03-01 is critical.
 
 ## Session Continuity
 
-Last session: 2026-02-02
-Stopped at: B2 API parsing bug in listBuckets
-Resume command: See below
+Last session: 2026-02-03
+Stopped at: Phase 3 planning complete
+Resume: Execute 03-01 first, then 03-02 + 03-03 in parallel, then 03-04
 
 ## Tech Stack
 
@@ -87,7 +105,7 @@ Resume command: See below
 - `Daemon/CloudMountDaemon/src/main.rs` - Daemon with IPC server
 - `Daemon/CloudMountDaemon/src/ipc/server.rs` - Unix socket IPC
 - `Daemon/CloudMountDaemon/src/ipc/protocol.rs` - JSON protocol
-- `Daemon/CloudMountDaemon/src/b2/client.rs` - B2 API client (**BUG HERE**)
+- `Daemon/CloudMountDaemon/src/b2/client.rs` - B2 API client
 - `Daemon/CloudMountDaemon/src/fs/b2fs.rs` - FUSE filesystem with cache
 - `Daemon/CloudMountDaemon/src/cache/metadata.rs` - Moka cache
 - `Daemon/CloudMountDaemon/src/mount/manager.rs` - Mount lifecycle
