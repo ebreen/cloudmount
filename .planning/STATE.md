@@ -5,27 +5,27 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Users can mount cloud storage buckets as local drives and access them seamlessly in Finder with a beautiful status bar interface for management.
-**Current focus:** Phase 4 in progress — Configuration & Polish
+**Current focus:** All phases complete — MVP feature-complete
 
 ## Current Position
 
 Phase: 4 of 4 (Configuration & Polish)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-03 — Completed 04-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-02-03 — Completed 04-02-PLAN.md
 
-Progress: [█████████████░] 93%
+Progress: [██████████████] 100%
 
 ## What's Complete
 
 - [x] Phase 1: Foundation (4/4 plans)
 - [x] Phase 2: Core Mount & Browse (4/4 plans)
 - [x] Phase 3: File I/O (4/4 plans)
-- [x] Phase 4 Plan 1: Bucket config persistence & disk usage IPC
+- [x] Phase 4: Configuration & Polish (2/2 plans)
 
 ## What's Left
 
-- [ ] 04-02: Disk usage display in menu and settings polish
+Nothing — all phases complete.
 
 ## Accumulated Context
 
@@ -45,6 +45,8 @@ Progress: [█████████████░] 93%
 - Phase 3: Directory rename returns ENOSYS (not supported for MVP)
 - Phase 4: totalBytesUsed sends None for MVP — B2 has no bucket size API, computation deferred
 - Phase 4: CodingKeys exclude isMounted and totalBytesUsed (runtime state, not persisted)
+- Phase 4: Disk usage shown inline with mountpoint using · separator (ByteCountFormatter)
+- Phase 4: Mount point validation prepends /Volumes/ for non-absolute paths
 
 ### Blockers/Concerns
 
@@ -53,9 +55,9 @@ Progress: [█████████████░] 93%
 
 ## Session Continuity
 
-Last session: 2026-02-03T14:39:22Z
-Stopped at: Completed 04-01-PLAN.md
-Resume: Execute 04-02-PLAN.md (disk usage display, settings polish)
+Last session: 2026-02-03T14:44:09Z
+Stopped at: Completed 04-02-PLAN.md — all phases complete
+Resume file: None
 
 ## Tech Stack
 

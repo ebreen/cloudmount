@@ -81,7 +81,7 @@ Plans:
 
 Plans:
 - [x] 04-01-PLAN.md — Bucket config persistence and disk usage IPC protocol
-- [ ] 04-02-PLAN.md — Disk usage display in menu and settings polish
+- [x] 04-02-PLAN.md — Disk usage display in menu and settings polish
 
 ## Progress
 
@@ -93,7 +93,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation | 4/4 | Complete | 2026-02-02 |
 | 2. Core Mount & Browse | 0/4 | Planned | - |
 | 3. File I/O | 0/4 | Planned | - |
-| 4. Configuration & Polish | 1/2 | In progress | - |
+| 4. Configuration & Polish | 2/2 | Complete | 2026-02-03 |
 
 ---
 *Roadmap created: 2026-02-02*
