@@ -7,39 +7,39 @@
 
 ### Core Mounting
 
-- [ ] **MOUNT-01**: User can mount a Backblaze B2 bucket as a local volume in /Volumes/
-- [ ] **MOUNT-02**: User can unmount a bucket from the status bar menu
-- [ ] **MOUNT-03**: Mount appears in Finder like a native drive
-- [ ] **MOUNT-04**: App detects if macFUSE is installed and guides installation if missing
+- [x] **MOUNT-01**: User can mount a Backblaze B2 bucket as a local volume in /Volumes/
+- [x] **MOUNT-02**: User can unmount a bucket from the status bar menu
+- [x] **MOUNT-03**: Mount appears in Finder like a native drive
+- [x] **MOUNT-04**: App detects if macFUSE is installed and guides installation if missing
 
 ### File Operations
 
-- [ ] **FILE-01**: User can browse directories in mounted bucket
-- [ ] **FILE-02**: User can read files from mounted bucket
-- [ ] **FILE-03**: User can write files to mounted bucket
-- [ ] **FILE-04**: User can delete files from mounted bucket
-- [ ] **FILE-05**: File metadata (size, modification time) displays correctly in Finder
+- [x] **FILE-01**: User can browse directories in mounted bucket
+- [x] **FILE-02**: User can read files from mounted bucket
+- [x] **FILE-03**: User can write files to mounted bucket
+- [x] **FILE-04**: User can delete files from mounted bucket
+- [x] **FILE-05**: File metadata (size, modification time) displays correctly in Finder
 
 ### Status Bar Interface
 
-- [ ] **UI-01**: Status bar icon shows mount status (mounted/unmounted)
-- [ ] **UI-02**: Menu displays list of configured buckets with mount status
-- [ ] **UI-03**: Menu shows disk usage for each mounted bucket
-- [ ] **UI-04**: One-click mount/unmount from menu
-- [ ] **UI-05**: "Settings" option opens configuration window
+- [x] **UI-01**: Status bar icon shows mount status (mounted/unmounted)
+- [x] **UI-02**: Menu displays list of configured buckets with mount status
+- [x] **UI-03**: Menu shows disk usage for each mounted bucket
+- [x] **UI-04**: One-click mount/unmount from menu
+- [x] **UI-05**: "Settings" option opens configuration window
 
 ### Configuration
 
-- [ ] **CONFIG-01**: User can add Backblaze B2 credentials (application key ID + key)
-- [ ] **CONFIG-02**: User can configure bucket name and mount point
-- [ ] **CONFIG-03**: Credentials stored securely in macOS Keychain
-- [ ] **CONFIG-04**: Settings persist between app restarts
+- [x] **CONFIG-01**: User can add Backblaze B2 credentials (application key ID + key)
+- [x] **CONFIG-02**: User can configure bucket name and mount point
+- [x] **CONFIG-03**: Credentials stored securely in macOS Keychain
+- [x] **CONFIG-04**: Settings persist between app restarts
 
 ### Error Handling
 
-- [ ] **ERROR-01**: Clear error messages for connection failures
-- [ ] **ERROR-02**: Graceful handling of network interruptions
-- [ ] **ERROR-03**: User-friendly error when macFUSE is not installed
+- [x] **ERROR-01**: Clear error messages for connection failures
+- [x] **ERROR-02**: Graceful handling of network interruptions
+- [x] **ERROR-03**: User-friendly error when macFUSE is not installed
 
 ## v2 Requirements
 
@@ -81,27 +81,27 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MOUNT-01 | Phase 2 | Pending |
-| MOUNT-02 | Phase 2 | Pending |
-| MOUNT-03 | Phase 2 | Pending |
-| MOUNT-04 | Phase 1 | Pending |
-| FILE-01 | Phase 2 | Pending |
-| FILE-02 | Phase 3 | Pending |
-| FILE-03 | Phase 3 | Pending |
-| FILE-04 | Phase 3 | Pending |
-| FILE-05 | Phase 2 | Pending |
-| UI-01 | Phase 1 | Pending |
-| UI-02 | Phase 2 | Pending |
-| UI-03 | Phase 4 | Pending |
-| UI-04 | Phase 2 | Pending |
-| UI-05 | Phase 4 | Pending |
-| CONFIG-01 | Phase 4 | Pending |
-| CONFIG-02 | Phase 4 | Pending |
-| CONFIG-03 | Phase 1 | Pending |
-| CONFIG-04 | Phase 1 | Pending |
-| ERROR-01 | Phase 3 | Pending |
-| ERROR-02 | Phase 3 | Pending |
-| ERROR-03 | Phase 1 | Pending |
+| MOUNT-01 | Phase 2 | Complete |
+| MOUNT-02 | Phase 2 | Complete |
+| MOUNT-03 | Phase 2 | Complete |
+| MOUNT-04 | Phase 1 | Complete |
+| FILE-01 | Phase 2 | Complete |
+| FILE-02 | Phase 3 | Complete |
+| FILE-03 | Phase 3 | Complete |
+| FILE-04 | Phase 3 | Complete |
+| FILE-05 | Phase 2 | Complete |
+| UI-01 | Phase 1 | Complete |
+| UI-02 | Phase 2 | Complete |
+| UI-03 | Phase 4 | Complete |
+| UI-04 | Phase 2 | Complete |
+| UI-05 | Phase 4 | Complete |
+| CONFIG-01 | Phase 4 | Complete |
+| CONFIG-02 | Phase 4 | Complete |
+| CONFIG-03 | Phase 1 | Complete |
+| CONFIG-04 | Phase 1 | Complete |
+| ERROR-01 | Phase 3 | Complete |
+| ERROR-02 | Phase 3 | Complete |
+| ERROR-03 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 21 total (18 original + 3 error handling)
@@ -116,4 +116,4 @@
 
 ---
 *Requirements defined: 2026-02-02*
-*Last updated: 2026-02-02 after initial definition*
+*Last updated: 2026-02-03 — all v1 requirements complete*

@@ -7,9 +7,9 @@ Build CloudMount from foundation to functional product: start with app shell and
 ## Phases
 
 - [x] **Phase 1: Foundation** - App shell, macFUSE detection, secure configuration storage *(Completed with Swift pivot)*
-- [ ] **Phase 2: Core Mount & Browse** - Mount/unmount buckets, browse directories, see metadata in Finder
-- [ ] **Phase 3: File I/O** - Read, write, and delete files through FUSE
-- [ ] **Phase 4: Configuration & Polish** - Settings window, disk usage display, complete status bar experience
+- [x] **Phase 2: Core Mount & Browse** - Mount/unmount buckets, browse directories, see metadata in Finder
+- [x] **Phase 3: File I/O** - Read, write, and delete files through FUSE
+- [x] **Phase 4: Configuration & Polish** - Settings window, disk usage display, complete status bar experience
 
 ## Phase Details
 
@@ -91,11 +91,12 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | 2026-02-02 |
-| 2. Core Mount & Browse | 0/4 | Planned | - |
-| 3. File I/O | 0/4 | Planned | - |
+| 2. Core Mount & Browse | 4/4 | Complete | 2026-02-03 |
+| 3. File I/O | 4/4 | Complete | 2026-02-03 |
 | 4. Configuration & Polish | 2/2 | Complete | 2026-02-03 |
 
 ---
 *Roadmap created: 2026-02-02*
 *Phase 1 completed: 2026-02-02 (pivoted to Swift/SwiftUI)*
+*Phase 4 completed: 2026-02-03 (all phases complete)*
 *Requirements coverage: 18/18 v1 requirements mapped*
