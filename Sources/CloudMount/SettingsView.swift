@@ -243,7 +243,7 @@ struct CredentialsPane: View {
         keyId = ""
         applicationKey = ""
         try? CredentialStore.shared.deleteB2Credentials()
-        appState.bucketConfigs = []
+        appState.clearAllBuckets()
     }
 }
 

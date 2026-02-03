@@ -32,6 +32,18 @@ struct DaemonMountInfo: Codable {
     let bucketId: String
     let bucketName: String
     let mountpoint: String
+    let pendingUploads: Int?
+    let lastError: String?
+    /// Total bytes used by the bucket (nil when not yet calculated by daemon)
+    let totalBytesUsed: Int64?
+}
+
+/// Information about a recent error from the daemon
+struct DaemonErrorInfo: Codable {
+    let timestamp: UInt64
+    let operation: String
+    let path: String
+    let error: String
 }
 
 /// Information about an available bucket from B2
@@ -52,6 +64,8 @@ struct DaemonResponse: Codable {
     let healthy: Bool?
     let mounts: [DaemonMountInfo]?
     let buckets: [DaemonBucketInfo]?
+    let connectionHealth: String?
+    let recentErrors: [DaemonErrorInfo]?
 }
 
 /// Client for communicating with the Rust daemon via Unix socket
@@ -75,7 +89,7 @@ actor DaemonClient {
     }
     
     /// Get the current status of the daemon including list of mounts
-    func getStatus() async throws -> (healthy: Bool, mounts: [DaemonMountInfo]) {
+    func getStatus() async throws -> (healthy: Bool, mounts: [DaemonMountInfo], connectionHealth: String, recentErrors: [DaemonErrorInfo]) {
         let command: [String: Any] = ["type": "getStatus"]
         let response = try await sendCommand(command)
         
@@ -86,7 +100,12 @@ actor DaemonClient {
             throw DaemonError.invalidResponse
         }
         
-        return (response.healthy ?? false, response.mounts ?? [])
+        return (
+            response.healthy ?? false,
+            response.mounts ?? [],
+            response.connectionHealth ?? "healthy",
+            response.recentErrors ?? []
+        )
     }
     
     /// Mount a bucket
