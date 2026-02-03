@@ -70,6 +70,12 @@ pub enum Response {
         healthy: bool,
         /// List of active mounts
         mounts: Vec<MountInfo>,
+        /// Connection health status ("healthy", "degraded", "unhealthy")
+        #[serde(default = "default_health")]
+        connection_health: String,
+        /// Recent errors
+        #[serde(default)]
+        recent_errors: Vec<ErrorInfo>,
     },
     /// List of available buckets
     #[serde(rename_all = "camelCase")]
@@ -101,6 +107,34 @@ pub struct MountInfo {
     pub bucket_name: String,
     /// Mount point path
     pub mountpoint: String,
+    /// Number of pending file uploads
+    #[serde(default)]
+    pub pending_uploads: u32,
+    /// Last error message (if any)
+    #[serde(default)]
+    pub last_error: Option<String>,
+    /// Total bytes used by the bucket (None when not yet calculated)
+    #[serde(default)]
+    pub total_bytes_used: Option<u64>,
+}
+
+/// Information about a recent error
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ErrorInfo {
+    /// Unix timestamp of the error
+    pub timestamp: u64,
+    /// What operation was attempted
+    pub operation: String,
+    /// File path involved (if any)
+    pub path: String,
+    /// Error description
+    pub error: String,
+}
+
+/// Default health value for deserialization
+fn default_health() -> String {
+    "healthy".to_string()
 }
 
 /// Parse a JSON command from bytes
@@ -192,11 +226,38 @@ mod tests {
                 bucket_id: "b123".to_string(),
                 bucket_name: "my-bucket".to_string(),
                 mountpoint: "/Volumes/MyBucket".to_string(),
+                pending_uploads: 0,
+                last_error: None,
+                total_bytes_used: None,
             }],
+            connection_health: "healthy".to_string(),
+            recent_errors: vec![],
         };
         let json = serialize_response(&response).unwrap();
         let json_str = String::from_utf8(json).unwrap();
         assert!(json_str.contains("status"));
         assert!(json_str.contains("my-bucket"));
+    }
+
+    #[test]
+    fn test_serialize_status_with_usage() {
+        let response = Response::Status {
+            version: 1,
+            healthy: true,
+            mounts: vec![MountInfo {
+                bucket_id: "b456".to_string(),
+                bucket_name: "data-bucket".to_string(),
+                mountpoint: "/Volumes/DataBucket".to_string(),
+                pending_uploads: 2,
+                last_error: None,
+                total_bytes_used: Some(1_073_741_824), // 1 GiB
+            }],
+            connection_health: "healthy".to_string(),
+            recent_errors: vec![],
+        };
+        let json = serialize_response(&response).unwrap();
+        let json_str = String::from_utf8(json).unwrap();
+        assert!(json_str.contains("totalBytesUsed"));
+        assert!(json_str.contains("1073741824"));
     }
 }

@@ -234,6 +234,9 @@ async fn process_command(
                     bucket_id: m.bucket_id,
                     bucket_name: m.bucket_name,
                     mountpoint: m.mountpoint.to_string_lossy().to_string(),
+                    pending_uploads: 0,
+                    last_error: None,
+                    total_bytes_used: None, // Will be populated when usage calculation is implemented
                 })
                 .collect();
 
@@ -241,6 +244,8 @@ async fn process_command(
                 version: crate::ipc::protocol::PROTOCOL_VERSION,
                 healthy: true,
                 mounts: mount_infos,
+                connection_health: "healthy".to_string(),
+                recent_errors: vec![],
             }
         }
 
