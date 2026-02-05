@@ -58,7 +58,7 @@ Shipped v1.0 MVP with ~6,042 LOC (1,333 Swift + 4,709 Rust).
 
 ## Constraints
 
-- **Platform**: macOS 15.4+ (Sequoia — required for FSKit)
+- **Platform**: macOS 26+ (Tahoe — required for FSKit V2 / FSGenericURLResource)
 - **Tech Stack**: Pure Swift/SwiftUI (UI + filesystem via FSKit)
 - **Dependencies**: None (FSKit is built into macOS, no macFUSE needed)
 - **Provider Priority**: Backblaze B2 only (generic S3 planned for later)
@@ -77,6 +77,9 @@ Shipped v1.0 MVP with ~6,042 LOC (1,333 Swift + 4,709 Rust).
 | Suppress macOS metadata files | Reduces B2 API calls significantly | Good |
 | Permanent delete (ignore versioning) | MVP simplicity | Good |
 | Open source release | Community contribution, no licensing complexity | Pending |
+| Rust/macFUSE → Swift/FSKit | FSKit eliminates macFUSE dependency; pure Swift simplifies build; FSKit V2 is purpose-built for network FS | Pending |
+| macOS 26+ minimum | FSKit V2 (FSGenericURLResource) requires macOS 26; V1 only supports block devices | Pending |
+| SPM → Xcode project | FSKit extensions require Xcode targets, Info.plist, entitlements; SPM can't build .appex | Pending |
 
 ## Current Milestone: v2.0 FSKit Pivot & Distribution
 
