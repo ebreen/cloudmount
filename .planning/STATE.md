@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Users can mount cloud storage buckets as local drives and access them seamlessly in Finder with a beautiful status bar interface for management.
-**Current focus:** Phase 5 complete, verified — ready for Phase 6 (FSKit Filesystem)
+**Current focus:** Phase 6 in progress — FSKit Filesystem extension
 
 ## Current Position
 
-Phase: 5 of 8 (Build System & B2 Client)
-Plan: 5 of 5 in current phase
-Status: Phase complete (verified: 9/9 must-haves passed)
-Last activity: 2026-02-05 — Phase 5 verified
+Phase: 6 of 8 (FSKit Filesystem)
+Plan: 1 of 4 in current phase
+Status: In progress
+Last activity: 2026-02-06 — Completed 06-01-PLAN.md
 
-Progress: [█████████████░░░░░░░] 63% (19/~30 plans — v1.0 complete, v2.0 in progress)
+Progress: [██████████████░░░░░░] 67% (20/~30 plans — v1.0 complete, v2.0 in progress)
 
 ## What's Complete
 
@@ -30,13 +30,14 @@ Progress: [█████████████░░░░░░░] 63% (19
 - [x] Phase 5 Plan 3: B2 API types + HTTP client
 - [x] Phase 5 Plan 4: B2AuthManager + B2Client + caches
 - [x] Phase 5 Plan 5: App state rewiring
+- [x] Phase 6 Plan 1: B2Item + MetadataBlocklist + StagingManager (foundation types)
 
 See: .planning/milestones/v1.0-ROADMAP.md
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
+- Total plans completed: 20
 - Average duration: —
 - Total execution time: —
 
@@ -49,6 +50,7 @@ See: .planning/milestones/v1.0-ROADMAP.md
 | 3. File I/O | 4 | — | — |
 | 4. Configuration & Polish | 2 | — | — |
 | 5. Build System & B2 Client | 5/5 | 20min | 4.0min |
+| 6. FSKit Filesystem | 1/4 | 3min | 3.0min |
 
 *Updated after each plan completion*
 
@@ -71,6 +73,8 @@ Recent decisions affecting current work:
 - B2AuthManager, MetadataCache, FileCache, B2Client all use actor isolation for Swift 6 concurrency
 - withAutoRefresh uses AuthContext snapshot to avoid mutable captures in Sendable closures
 - B2Client instantiated per-validation in views rather than held on AppState — avoids actor isolation complexity in SwiftUI
+- SHA-256 hash for staging file names — avoids filesystem issues with long B2 paths
+- Actor isolation for StagingManager — matches FSKit's concurrent callback pattern
 
 ### Blockers/Concerns
 
@@ -84,6 +88,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-05T23:30:00Z
-Stopped at: Phase 5 verified and complete — ready for Phase 6
+Last session: 2026-02-06T00:04:00Z
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
