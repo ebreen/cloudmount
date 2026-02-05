@@ -218,7 +218,7 @@ extension B2Volume {
     }
 }
 
-// MARK: - Mutation Operations (Task 2)
+// MARK: - Mutation Operations
 
 extension B2Volume {
 
@@ -231,9 +231,95 @@ extension B2Volume {
         attributes: FSItem.SetAttributesRequest,
         replyHandler: @escaping (FSItem?, FSFileName?, (any Error)?) -> Void
     ) {
-        // Stub — replaced by Task 2
-        logger.debug("createItem stub — awaiting Task 2 implementation")
-        replyHandler(nil, nil, fs_errorForPOSIXError(ENOSYS))
+        guard let parentItem = directory as? B2Item else {
+            replyHandler(nil, nil, fs_errorForPOSIXError(EINVAL))
+            return
+        }
+
+        guard let nameString = extractFileName(name) else {
+            replyHandler(nil, nil, fs_errorForPOSIXError(EINVAL))
+            return
+        }
+
+        // Suppress macOS metadata — return fake item without B2 API call
+        if MetadataBlocklist.isSuppressed(nameString) {
+            let fakePath = parentItem.b2Path.isEmpty ? nameString : parentItem.b2Path + nameString
+            let fakeItem = B2Item(
+                name: name,
+                identifier: allocateItemId(),
+                b2Path: fakePath,
+                bucketId: bucketId,
+                isDirectory: type == .directory
+            )
+            cacheItem(fakeItem)
+            replyHandler(fakeItem, fakeItem.itemName, nil)
+            return
+        }
+
+        let parentPath = parentItem.b2Path
+
+        if type == .directory {
+            // Directories: upload B2 folder marker
+            let dirPath = parentPath.isEmpty ? nameString + "/" : parentPath + nameString + "/"
+
+            let reply = UncheckedSendableBox(replyHandler)
+            let volume = UncheckedSendableBox(self)
+            let nameBox = UncheckedSendableBox(name)
+            let client = self.b2Client
+            let bucket = self.bucketId
+            let bucketNameVal = self.bucketName
+
+            Task {
+                do {
+                    try await client.createFolder(
+                        bucketId: bucket,
+                        bucketName: bucketNameVal,
+                        folderPath: dirPath
+                    )
+
+                    let item = B2Item(
+                        name: nameBox.value,
+                        identifier: volume.value.allocateItemId(),
+                        b2Path: dirPath,
+                        bucketId: bucket,
+                        isDirectory: true
+                    )
+                    volume.value.cacheItem(item)
+                    reply.value(item, item.itemName, nil)
+                } catch {
+                    reply.value(nil, nil, fs_errorForPOSIXError(EIO))
+                }
+            }
+        } else {
+            // Files: create local staging placeholder, mark dirty
+            let filePath = parentPath.isEmpty ? nameString : parentPath + nameString
+
+            let item = B2Item(
+                name: name,
+                identifier: allocateItemId(),
+                b2Path: filePath,
+                bucketId: bucketId,
+                isDirectory: false
+            )
+            item.isDirty = true
+            cacheItem(item)
+
+            // Create staging file asynchronously
+            let reply = UncheckedSendableBox(replyHandler)
+            let itemBox = UncheckedSendableBox(item)
+            let staging = self.stagingManager
+            let itemPath = filePath
+
+            Task {
+                do {
+                    let stagingURL = try await staging.createStagingFile(for: itemPath)
+                    itemBox.value.localStagingURL = stagingURL
+                    reply.value(itemBox.value, itemBox.value.itemName, nil)
+                } catch {
+                    reply.value(nil, nil, fs_errorForPOSIXError(EIO))
+                }
+            }
+        }
     }
 
     // MARK: - Remove Item
@@ -244,9 +330,57 @@ extension B2Volume {
         fromDirectory directory: FSItem,
         replyHandler: @escaping ((any Error)?) -> Void
     ) {
-        // Stub — replaced by Task 2
-        logger.debug("removeItem stub — awaiting Task 2 implementation")
-        replyHandler(fs_errorForPOSIXError(ENOSYS))
+        guard let b2Item = item as? B2Item else {
+            replyHandler(fs_errorForPOSIXError(EINVAL))
+            return
+        }
+
+        let nameString = extractFileName(name)
+
+        // Suppress macOS metadata — remove from cache without B2 API call
+        if let n = nameString, MetadataBlocklist.isSuppressed(n) {
+            removeCachedItem(for: b2Item.b2Path)
+            replyHandler(nil)
+            return
+        }
+
+        // Need a B2 file ID to delete from B2
+        guard let fileId = b2Item.b2FileId else {
+            // Locally created file that was never uploaded — just clean up
+            removeCachedItem(for: b2Item.b2Path)
+            let staging = self.stagingManager
+            let itemPath = b2Item.b2Path
+            Task { await staging.removeStagingFile(for: itemPath) }
+            replyHandler(nil)
+            return
+        }
+
+        let reply = UncheckedSendableBox(replyHandler)
+        let volume = UncheckedSendableBox(self)
+        let client = self.b2Client
+        let bucket = self.bucketId
+        let fileName = b2Item.b2Path
+        let staging = self.stagingManager
+
+        Task {
+            do {
+                try await client.deleteFile(
+                    bucketId: bucket,
+                    fileName: fileName,
+                    fileId: fileId
+                )
+
+                // Clean up staging
+                await staging.removeStagingFile(for: fileName)
+
+                // Remove from cache
+                volume.value.removeCachedItem(for: fileName)
+
+                reply.value(nil)
+            } catch {
+                reply.value(fs_errorForPOSIXError(EIO))
+            }
+        }
     }
 
     // MARK: - Rename Item
@@ -260,8 +394,63 @@ extension B2Volume {
         overItem: FSItem?,
         replyHandler: @escaping (FSFileName?, (any Error)?) -> Void
     ) {
-        // Stub — replaced by Task 2
-        logger.debug("renameItem stub — awaiting Task 2 implementation")
-        replyHandler(nil, fs_errorForPOSIXError(ENOSYS))
+        guard let b2Item = item as? B2Item,
+              let destDir = destinationDirectory as? B2Item else {
+            replyHandler(nil, fs_errorForPOSIXError(EINVAL))
+            return
+        }
+
+        guard let destNameString = extractFileName(destinationName) else {
+            replyHandler(nil, fs_errorForPOSIXError(EINVAL))
+            return
+        }
+
+        // Directories: B2 has no native rename for dirs — return ENOTSUP
+        if b2Item.isDirectory {
+            replyHandler(nil, fs_errorForPOSIXError(ENOTSUP))
+            return
+        }
+
+        let destPath = destDir.b2Path.isEmpty ? destNameString : destDir.b2Path + destNameString
+        let oldPath = b2Item.b2Path
+
+        // Files without b2FileId (newly created, not yet uploaded): just update local cache
+        guard let fileId = b2Item.b2FileId else {
+            let volume = UncheckedSendableBox(self)
+            volume.value.removeCachedItem(for: oldPath)
+            b2Item.b2Path = destPath
+            volume.value.cacheItem(b2Item)
+            replyHandler(destinationName, nil)
+            return
+        }
+
+        // Files with b2FileId: server-side copy + delete via B2
+        let reply = UncheckedSendableBox(replyHandler)
+        let volume = UncheckedSendableBox(self)
+        let itemBox = UncheckedSendableBox(b2Item)
+        let destNameBox = UncheckedSendableBox(destinationName)
+        let client = self.b2Client
+        let bucket = self.bucketId
+
+        Task {
+            do {
+                try await client.rename(
+                    bucketId: bucket,
+                    sourceFileName: oldPath,
+                    sourceFileId: fileId,
+                    destinationFileName: destPath
+                )
+
+                // Update local cache
+                volume.value.removeCachedItem(for: oldPath)
+                itemBox.value.b2Path = destPath
+                itemBox.value.b2FileId = nil  // Invalidate old fileId — new copy has different ID
+                volume.value.cacheItem(itemBox.value)
+
+                reply.value(destNameBox.value, nil)
+            } catch {
+                reply.value(nil, fs_errorForPOSIXError(EIO))
+            }
+        }
     }
 }

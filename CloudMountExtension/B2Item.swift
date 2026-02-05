@@ -19,7 +19,8 @@ class B2Item: FSItem {
     // MARK: - B2 Identity
 
     /// Full B2 key path (e.g., "photos/vacation/img.jpg").
-    let b2Path: String
+    /// Mutable to support rename operations that update the path.
+    var b2Path: String
 
     /// The B2 bucket this item belongs to.
     let bucketId: String
