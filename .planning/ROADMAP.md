@@ -63,12 +63,13 @@ Plans:
   3. User can open/read files from the mounted volume (downloads from B2 with local caching) and create/write new files (uploads to B2 on close)
   4. User can delete files and create/remove directories through Finder
   5. macOS metadata files (.DS_Store, .Spotlight-V100, ._ files) are suppressed and don't generate B2 API calls
-**Plans**: TBD
+**Plans:** 4 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
-- [ ] 06-03: TBD
+- [ ] 06-01-PLAN.md — B2Item FSItem subclass + MetadataBlocklist + StagingManager (foundation types)
+- [ ] 06-02-PLAN.md — Extension entry point + FileSystem lifecycle + B2Volume shell + Info.plist
+- [ ] 06-03-PLAN.md — Volume operations: lookup, enumerate, create, remove, rename, attributes
+- [ ] 06-04-PLAN.md — Read/write + open/close operations + build verification
 
 ### Phase 7: App Integration
 **Goal**: Users can mount/unmount B2 buckets from the menu bar UI with clear status feedback and guided setup for the FSKit extension
