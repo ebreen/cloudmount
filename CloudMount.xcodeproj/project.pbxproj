@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		049E5BC55DDD5F9242BA83FF /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6433486524D4D5416F1B90E /* SettingsView.swift */; };
+		1C7006BE714601F330E66F53 /* B2Client.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBA67E3896527250CFC0F8E8 /* B2Client.swift */; };
+		2CE47C1946DCD7D424F86150 /* B2HTTPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A162D99B7BED785A6802097C /* B2HTTPClient.swift */; };
+		2F6A5F4727B17100E5818618 /* MetadataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80AD3A0B2839CDCB3BABD0E5 /* MetadataCache.swift */; };
 		32BC36263CA0C2C03AC70CA2 /* CredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720D24C3E178CA03724457FC /* CredentialStore.swift */; };
 		3640B8C10A96787ACCD23A98 /* CloudMountApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 245352CBCDD999B011797180 /* CloudMountApp.swift */; };
 		3D5DAA7E3336BE32703BFF37 /* CloudMountKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 7D5B0B4FE612455B8C71C655 /* CloudMountKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -16,8 +19,10 @@
 		6BBDA27937D8E320CC233C27 /* CloudMountKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F7BEF9119DCC2176BEED910 /* CloudMountKit.framework */; };
 		70AD4F4CD5F8C873376731CF /* AccountConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2324CD292FFD9B3F40A01F /* AccountConfig.swift */; };
 		94763A9608EC873FCCF82B19 /* CloudMountExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A2C373BFE3870E87CF3EB4 /* CloudMountExtension.swift */; };
+		A1B11A900AED50B9A2FD93BE /* B2AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2395CEA9F2CD28B3333B9295 /* B2AuthManager.swift */; };
 		AAC7092125C70D8CA31C4FC3 /* SharedDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 046C34EDDD1FE2A6002DB643 /* SharedDefaults.swift */; };
 		C0F76BDBDDD6CD516FDEF495 /* CloudMountKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8F7BEF9119DCC2176BEED910 /* CloudMountKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		C76E4648B5684964FE005359 /* FileCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = F199CE2CC481105CE8C647F5 /* FileCache.swift */; };
 		C7D887436E1C3D3CA083F27C /* MenuContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A482CA13FB69BC52FD66AD5 /* MenuContentView.swift */; };
 		CF4BF056946B223EAA77D1F1 /* B2Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BC29851CE3B4D28A86E4F17 /* B2Error.swift */; };
 		D9689270A634E287D3573F31 /* MountConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC8839B8E82811D074BA4C03 /* MountConfig.swift */; };
@@ -76,6 +81,7 @@
 
 /* Begin PBXFileReference section */
 		046C34EDDD1FE2A6002DB643 /* SharedDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedDefaults.swift; sourceTree = "<group>"; };
+		2395CEA9F2CD28B3333B9295 /* B2AuthManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2AuthManager.swift; sourceTree = "<group>"; };
 		245352CBCDD999B011797180 /* CloudMountApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudMountApp.swift; sourceTree = "<group>"; };
 		267CDB85D51E3FACEC897026 /* B2Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2Types.swift; sourceTree = "<group>"; };
 		58F100E013EA0D11989456A8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -84,14 +90,18 @@
 		720D24C3E178CA03724457FC /* CredentialStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CredentialStore.swift; sourceTree = "<group>"; };
 		7D495B85756E68677590429E /* CloudMount.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CloudMount.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7D5B0B4FE612455B8C71C655 /* CloudMountKit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CloudMountKit.h; sourceTree = "<group>"; };
+		80AD3A0B2839CDCB3BABD0E5 /* MetadataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataCache.swift; sourceTree = "<group>"; };
 		8F7BEF9119DCC2176BEED910 /* CloudMountKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CloudMountKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		90CDC498A7E1835C11A197A1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A162D99B7BED785A6802097C /* B2HTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2HTTPClient.swift; sourceTree = "<group>"; };
 		A6433486524D4D5416F1B90E /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		AC8839B8E82811D074BA4C03 /* MountConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MountConfig.swift; sourceTree = "<group>"; };
 		B3788726E2E79EA78AFA73FA /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		B7A2C373BFE3870E87CF3EB4 /* CloudMountExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudMountExtension.swift; sourceTree = "<group>"; };
+		DBA67E3896527250CFC0F8E8 /* B2Client.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2Client.swift; sourceTree = "<group>"; };
 		DC2324CD292FFD9B3F40A01F /* AccountConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountConfig.swift; sourceTree = "<group>"; };
 		E0E6C3CAB4887F042706C25F /* CloudMountExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CloudMountExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		F199CE2CC481105CE8C647F5 /* FileCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileCache.swift; sourceTree = "<group>"; };
 		F56A1F700399746EA96DF1EF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -149,6 +159,7 @@
 				7D5B0B4FE612455B8C71C655 /* CloudMountKit.h */,
 				90CDC498A7E1835C11A197A1 /* Info.plist */,
 				3CA0FDCB6A2BFEE5D8B95BBC /* B2 */,
+				DA9EC9C54CD4121E3786A473 /* Cache */,
 				1DB67A5F881F9CB86022CEA5 /* Config */,
 				EA5A89AEC9C6B17F38A49673 /* Credentials */,
 			);
@@ -169,7 +180,10 @@
 		3CA0FDCB6A2BFEE5D8B95BBC /* B2 */ = {
 			isa = PBXGroup;
 			children = (
+				2395CEA9F2CD28B3333B9295 /* B2AuthManager.swift */,
+				DBA67E3896527250CFC0F8E8 /* B2Client.swift */,
 				6BC29851CE3B4D28A86E4F17 /* B2Error.swift */,
+				A162D99B7BED785A6802097C /* B2HTTPClient.swift */,
 				267CDB85D51E3FACEC897026 /* B2Types.swift */,
 			);
 			path = B2;
@@ -191,6 +205,15 @@
 				A6433486524D4D5416F1B90E /* SettingsView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		DA9EC9C54CD4121E3786A473 /* Cache */ = {
+			isa = PBXGroup;
+			children = (
+				F199CE2CC481105CE8C647F5 /* FileCache.swift */,
+				80AD3A0B2839CDCB3BABD0E5 /* MetadataCache.swift */,
+			);
+			path = Cache;
 			sourceTree = "<group>";
 		};
 		EA5A89AEC9C6B17F38A49673 /* Credentials */ = {
@@ -334,9 +357,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				70AD4F4CD5F8C873376731CF /* AccountConfig.swift in Sources */,
+				A1B11A900AED50B9A2FD93BE /* B2AuthManager.swift in Sources */,
+				1C7006BE714601F330E66F53 /* B2Client.swift in Sources */,
 				CF4BF056946B223EAA77D1F1 /* B2Error.swift in Sources */,
+				2CE47C1946DCD7D424F86150 /* B2HTTPClient.swift in Sources */,
 				FF70B5D54C0033B87E221B73 /* B2Types.swift in Sources */,
 				32BC36263CA0C2C03AC70CA2 /* CredentialStore.swift in Sources */,
+				C76E4648B5684964FE005359 /* FileCache.swift in Sources */,
+				2F6A5F4727B17100E5818618 /* MetadataCache.swift in Sources */,
 				D9689270A634E287D3573F31 /* MountConfig.swift in Sources */,
 				AAC7092125C70D8CA31C4FC3 /* SharedDefaults.swift in Sources */,
 			);
