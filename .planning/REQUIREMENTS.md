@@ -104,51 +104,51 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUILD-01 | — | Pending |
-| BUILD-02 | — | Pending |
-| BUILD-03 | — | Pending |
-| BUILD-04 | — | Pending |
-| BUILD-05 | — | Pending |
-| FSKIT-01 | — | Pending |
-| FSKIT-02 | — | Pending |
-| FSKIT-03 | — | Pending |
-| FSKIT-04 | — | Pending |
-| FSKIT-05 | — | Pending |
-| FSKIT-06 | — | Pending |
-| FSKIT-07 | — | Pending |
-| B2-01 | — | Pending |
-| B2-02 | — | Pending |
-| B2-03 | — | Pending |
-| B2-04 | — | Pending |
-| B2-05 | — | Pending |
-| B2-06 | — | Pending |
-| B2-07 | — | Pending |
-| B2-08 | — | Pending |
-| B2-09 | — | Pending |
-| B2-10 | — | Pending |
-| APP-01 | — | Pending |
-| APP-02 | — | Pending |
-| APP-03 | — | Pending |
-| APP-04 | — | Pending |
-| APP-05 | — | Pending |
-| PKG-01 | — | Pending |
-| PKG-02 | — | Pending |
-| PKG-03 | — | Pending |
-| PKG-04 | — | Pending |
-| PKG-05 | — | Pending |
-| BREW-01 | — | Pending |
-| BREW-02 | — | Pending |
-| BREW-03 | — | Pending |
-| CI-01 | — | Pending |
-| CI-02 | — | Pending |
-| CI-03 | — | Pending |
-| CI-04 | — | Pending |
+| BUILD-01 | Phase 5 | Pending |
+| BUILD-02 | Phase 5 | Pending |
+| BUILD-03 | Phase 5 | Pending |
+| BUILD-04 | Phase 5 | Pending |
+| BUILD-05 | Phase 5 | Pending |
+| B2-01 | Phase 5 | Pending |
+| B2-02 | Phase 5 | Pending |
+| B2-03 | Phase 5 | Pending |
+| B2-04 | Phase 5 | Pending |
+| B2-05 | Phase 5 | Pending |
+| B2-06 | Phase 5 | Pending |
+| B2-07 | Phase 5 | Pending |
+| B2-08 | Phase 5 | Pending |
+| B2-09 | Phase 5 | Pending |
+| B2-10 | Phase 5 | Pending |
+| FSKIT-01 | Phase 6 | Pending |
+| FSKIT-02 | Phase 6 | Pending |
+| FSKIT-03 | Phase 6 | Pending |
+| FSKIT-04 | Phase 6 | Pending |
+| FSKIT-05 | Phase 6 | Pending |
+| FSKIT-06 | Phase 6 | Pending |
+| FSKIT-07 | Phase 6 | Pending |
+| APP-01 | Phase 7 | Pending |
+| APP-02 | Phase 7 | Pending |
+| APP-03 | Phase 7 | Pending |
+| APP-04 | Phase 7 | Pending |
+| APP-05 | Phase 7 | Pending |
+| PKG-01 | Phase 8 | Pending |
+| PKG-02 | Phase 8 | Pending |
+| PKG-03 | Phase 8 | Pending |
+| PKG-04 | Phase 8 | Pending |
+| PKG-05 | Phase 8 | Pending |
+| BREW-01 | Phase 8 | Pending |
+| BREW-02 | Phase 8 | Pending |
+| BREW-03 | Phase 8 | Pending |
+| CI-01 | Phase 8 | Pending |
+| CI-02 | Phase 8 | Pending |
+| CI-03 | Phase 8 | Pending |
+| CI-04 | Phase 8 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 39 total
-- Mapped to phases: 0
-- Unmapped: 39 ⚠️
+- Mapped to phases: 39 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 after initial definition*
+*Last updated: 2026-02-05 after roadmap creation*

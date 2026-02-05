@@ -5,14 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Users can mount cloud storage buckets as local drives and access them seamlessly in Finder with a beautiful status bar interface for management.
-**Current focus:** v2.0 FSKit Pivot & Distribution
+**Current focus:** Phase 5 — Build System & B2 Client
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 5 of 8 (Build System & B2 Client)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-02-05 — Milestone v2.0 started
+Status: Ready to plan
+Last activity: 2026-02-05 — v2.0 roadmap created
+
+Progress: [██████████░░░░░░░░░░] 48% (14/~25 plans — v1.0 complete, v2.0 starting)
 
 ## What's Complete
 
@@ -22,47 +24,49 @@ Last activity: 2026-02-05 — Milestone v2.0 started
 - [x] Phase 3: File I/O (4/4 plans)
 - [x] Phase 4: Configuration & Polish (2/2 plans)
 
-See: .planning/milestones/v1.0-ROADMAP.md for full details
+See: .planning/milestones/v1.0-ROADMAP.md
 
-## What's Left
+## Performance Metrics
 
-### v2.0 FSKit Pivot & Distribution
-- [ ] Rewrite filesystem layer: Rust/FUSE → Swift/FSKit
-- [ ] Port B2 API client: Rust → Swift
-- [ ] Remove Rust daemon and macFUSE dependency
-- [ ] Package as .app bundle
-- [ ] GitHub Releases with .dmg
-- [ ] Homebrew Cask
-- [ ] CI/CD workflow (PR checks + tag releases)
+**Velocity:**
+- Total plans completed: 14
+- Average duration: —
+- Total execution time: —
+
+**By Phase:**
+
+| Phase | Plans | Total | Avg/Plan |
+|-------|-------|-------|----------|
+| 1. Foundation | 4 | — | — |
+| 2. Core Mount & Browse | 4 | — | — |
+| 3. File I/O | 4 | — | — |
+| 4. Configuration & Polish | 2 | — | — |
+
+*Updated after each plan completion*
 
 ## Accumulated Context
 
 ### Decisions
 
-Archived to PROJECT.md Key Decisions table. See .planning/milestones/v1.0-ROADMAP.md for full milestone decision log.
+Archived to PROJECT.md Key Decisions table.
+Recent decisions affecting current work:
+
+- Rust/macFUSE → Swift/FSKit: FSKit V2 eliminates macFUSE; pure Swift simplifies build
+- macOS 26+ minimum: FSKit V2 (FSGenericURLResource) requires Tahoe
+- SPM → Xcode project: FSKit extensions need .appex targets, Info.plist, entitlements
 
 ### Blockers/Concerns
 
-- Pre-existing test failure: `cache::metadata::tests::test_cache_clear` (moka cache timing) — cosmetic, not blocking
+- FSKit V2 is immature — `removeItem` may not fire (known bug), no kernel caching (~121us/syscall)
+- Extension must be manually enabled by users in System Settings (no programmatic API)
+- GitHub Actions runner may not have macOS 26 SDK yet — may need self-hosted or Xcode Cloud
+
+### Pending Todos
+
+None yet.
 
 ## Session Continuity
 
 Last session: 2026-02-05
-Stopped at: v1.0 milestone archived
+Stopped at: v2.0 roadmap created, ready to plan Phase 5
 Resume file: None
-
-## Tech Stack
-
-**Swift/SwiftUI (UI Layer):**
-- `Sources/CloudMount/CloudMountApp.swift` - Main app, BucketConfigStore, persistence
-- `Sources/CloudMount/DaemonClient.swift` - IPC client (with totalBytesUsed)
-- `Sources/CloudMount/CredentialStore.swift` - Keychain storage
-- `Sources/CloudMount/MenuContentView.swift` - Menu bar with mount controls
-- `Sources/CloudMount/SettingsView.swift` - Credentials + Buckets tabs
-
-**Rust Daemon (FUSE Layer):**
-- `Daemon/CloudMountDaemon/src/ipc/protocol.rs` - JSON protocol (with total_bytes_used)
-- `Daemon/CloudMountDaemon/src/ipc/server.rs` - Unix socket IPC
-- `Daemon/CloudMountDaemon/src/b2/client.rs` - B2 API client
-- `Daemon/CloudMountDaemon/src/fs/b2fs.rs` - FUSE filesystem
-- `Daemon/CloudMountDaemon/src/mount/manager.rs` - Mount lifecycle
