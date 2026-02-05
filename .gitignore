@@ -1,34 +1,18 @@
 # Build outputs
 .build/
-target/
 DerivedData/
+
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcworkspace/
+xcuserdata/
 
 # Swift Package Manager
 .swiftpm/
-Package.resolved
-
-# Rust
-Daemon/CloudMountDaemon/target/
-
-# Old Tauri artifacts (removed in pivot)
-src-tauri/
-src/
-node_modules/
-dist/
-
-# Node / frontend (removed in pivot)
-package.json
-package-lock.json
-tsconfig.json
-vite.config.ts
-index.html
 
 # IDE
 .idea/
-*.xcworkspace/
-*.xcuserdata/
 .vscode/
-*.xcodeproj/xcuserdata/
 
 # OS
 .DS_Store
