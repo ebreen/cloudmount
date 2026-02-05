@@ -28,7 +28,7 @@ See: .planning/milestones/v1.0-ROADMAP.md for full details.
 - Decimal phases (5.1, 6.1): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 5: Build System & B2 Client** - Xcode project migration + Swift B2 API client
-- [ ] **Phase 6: FSKit Filesystem** - FSKit extension with full volume operations wired to B2
+- [x] **Phase 6: FSKit Filesystem** - FSKit extension with full volume operations wired to B2
 - [ ] **Phase 7: App Integration** - Replace daemon with mount orchestration and update UI
 - [ ] **Phase 8: Distribution** - Code signing, notarization, DMG, Homebrew Cask, CI/CD pipeline
 
@@ -69,7 +69,7 @@ Plans:
 - [x] 06-01-PLAN.md — B2Item FSItem subclass + MetadataBlocklist + StagingManager (foundation types)
 - [x] 06-02-PLAN.md — Extension entry point + FileSystem lifecycle + B2Volume shell + Info.plist
 - [x] 06-03-PLAN.md — Volume operations: lookup, enumerate, create, remove, rename, attributes
-- [ ] 06-04-PLAN.md — Read/write + open/close operations + build verification
+- [x] 06-04-PLAN.md — Read/write + open/close operations + build verification
 
 ### Phase 7: App Integration
 **Goal**: Users can mount/unmount B2 buckets from the menu bar UI with clear status feedback and guided setup for the FSKit extension
@@ -115,6 +115,6 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 3. File I/O | v1.0 | 4/4 | Complete | 2026-02-03 |
 | 4. Configuration & Polish | v1.0 | 2/2 | Complete | 2026-02-03 |
 | 5. Build System & B2 Client | v2.0 | 5/5 | Complete | 2026-02-05 |
-| 6. FSKit Filesystem | v2.0 | 3/4 | In progress | - |
+| 6. FSKit Filesystem | v2.0 | 4/4 | Complete | 2026-02-06 |
 | 7. App Integration | v2.0 | 0/TBD | Not started | - |
 | 8. Distribution | v2.0 | 0/TBD | Not started | - |

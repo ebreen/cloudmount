@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Users can mount cloud storage buckets as local drives and access them seamlessly in Finder with a beautiful status bar interface for management.
-**Current focus:** Phase 6 in progress — FSKit Filesystem extension
+**Current focus:** Phase 6 complete — FSKit Filesystem extension structurally complete
 
 ## Current Position
 
 Phase: 6 of 8 (FSKit Filesystem)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-02-06 — Completed 06-03-PLAN.md
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-02-06 — Completed 06-04-PLAN.md
 
-Progress: [███████████████░░░░░] 73% (22/~30 plans — v1.0 complete, v2.0 in progress)
+Progress: [████████████████░░░░] 77% (23/~30 plans — v1.0 complete, v2.0 in progress)
 
 ## What's Complete
 
@@ -33,13 +33,14 @@ Progress: [███████████████░░░░░] 73% (22
 - [x] Phase 6 Plan 1: B2Item + MetadataBlocklist + StagingManager (foundation types)
 - [x] Phase 6 Plan 2: Extension entry point + FileSystem lifecycle + B2Volume shell
 - [x] Phase 6 Plan 3: Volume operations (lookup, enumerate, create, remove, rename, attributes)
+- [x] Phase 6 Plan 4: File I/O operations (open/read/write/close)
 
 See: .planning/milestones/v1.0-ROADMAP.md
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
+- Total plans completed: 23
 - Average duration: —
 - Total execution time: —
 
@@ -52,7 +53,7 @@ See: .planning/milestones/v1.0-ROADMAP.md
 | 3. File I/O | 4 | — | — |
 | 4. Configuration & Polish | 2 | — | — |
 | 5. Build System & B2 Client | 5/5 | 20min | 4.0min |
-| 6. FSKit Filesystem | 3/4 | 36min | 12.0min |
+| 6. FSKit Filesystem | 4/4 | 40min | 10.0min |
 
 *Updated after each plan completion*
 
@@ -79,9 +80,11 @@ Recent decisions affecting current work:
 - Actor isolation for StagingManager — matches FSKit's concurrent callback pattern
 - UncheckedSendableBox for FSKit ObjC reply handlers — Swift 6 concurrency bridge pattern
 - FSVolume nested Swift types (FSVolume.Operations, FSItem.Attributes) — ObjC types renamed in Swift
-- Volume extension delegation: B2Volume.swift protocol methods → *Impl in B2VolumeOperations.swift
+- Volume extension delegation: B2Volume.swift protocol methods → *Impl in B2VolumeOperations.swift / B2VolumeReadWrite.swift
 - B2Item.b2Path as var for rename support; directory rename returns ENOTSUP
 - FSItem.ItemType.file (not .regular) for regular file attributes in FSKit V2
+- Upload on final close only (modes.isEmpty); failure keeps isDirty for retry
+- FSMutableFileDataBuffer.withUnsafeMutableBytes for zero-copy read into kernel buffer
 
 ### Blockers/Concerns
 
@@ -95,6 +98,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-05T23:45:00Z
-Stopped at: Completed 06-03-PLAN.md
+Last session: 2026-02-05T23:52:50Z
+Stopped at: Completed 06-04-PLAN.md — Phase 6 complete
 Resume file: None
