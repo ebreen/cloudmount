@@ -27,7 +27,7 @@ See: .planning/milestones/v1.0-ROADMAP.md for full details.
 - Integer phases (5, 6, 7, 8): Planned milestone work
 - Decimal phases (5.1, 6.1): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 5: Build System & B2 Client** - Xcode project migration + Swift B2 API client
+- [x] **Phase 5: Build System & B2 Client** - Xcode project migration + Swift B2 API client
 - [ ] **Phase 6: FSKit Filesystem** - FSKit extension with full volume operations wired to B2
 - [ ] **Phase 7: App Integration** - Replace daemon with mount orchestration and update UI
 - [ ] **Phase 8: Distribution** - Code signing, notarization, DMG, Homebrew Cask, CI/CD pipeline
@@ -50,8 +50,8 @@ Plans:
 - [x] 05-01-PLAN.md — Remove Rust/macFUSE/SPM + create Xcode project with 3 targets
 - [x] 05-02-PLAN.md — Native Keychain credential store + account/mount config models
 - [x] 05-03-PLAN.md — B2 API types, error types, and HTTP client (low-level)
-- [ ] 05-04-PLAN.md — B2AuthManager + B2Client actor + metadata/file caches
-- [ ] 05-05-PLAN.md — Rewire host app UI to CloudMountKit stack
+- [x] 05-04-PLAN.md — B2AuthManager + B2Client actor + metadata/file caches
+- [x] 05-05-PLAN.md — Rewire host app UI to CloudMountKit stack
 
 ### Phase 6: FSKit Filesystem
 **Goal**: Users can mount a B2 bucket via the FSKit extension and browse, read, write, and delete files in Finder as if it were a local volume
@@ -113,7 +113,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 2. Core Mount & Browse | v1.0 | 4/4 | Complete | 2026-02-03 |
 | 3. File I/O | v1.0 | 4/4 | Complete | 2026-02-03 |
 | 4. Configuration & Polish | v1.0 | 2/2 | Complete | 2026-02-03 |
-| 5. Build System & B2 Client | v2.0 | 3/5 | In progress | - |
+| 5. Build System & B2 Client | v2.0 | 5/5 | Complete | 2026-02-05 |
 | 6. FSKit Filesystem | v2.0 | 0/TBD | Not started | - |
 | 7. App Integration | v2.0 | 0/TBD | Not started | - |
 | 8. Distribution | v2.0 | 0/TBD | Not started | - |
