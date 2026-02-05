@@ -40,9 +40,9 @@ class B2Volume: FSVolume,
     let bucketName: String
 
     /// Manages local temporary staging files for the write-on-close pattern.
-    private let stagingManager: StagingManager
+    let stagingManager: StagingManager
 
-    private let logger = Logger(subsystem: "com.cloudmount.extension", category: "Volume")
+    let logger = Logger(subsystem: "com.cloudmount.extension", category: "Volume")
 
     /// B2 path → cached B2Item — maps B2 key paths to their filesystem items.
     private var itemCache: [String: B2Item] = [:]
@@ -241,19 +241,17 @@ class B2Volume: FSVolume,
         replyHandler(nil)
     }
 
-    // MARK: - Lookup
+    // MARK: - Lookup (→ B2VolumeOperations.swift)
 
     func lookupItem(
         named name: FSFileName,
         inDirectory directory: FSItem,
         replyHandler: @escaping (FSItem?, FSFileName?, (any Error)?) -> Void
     ) {
-        // TODO: Plan 03 implementation — lookup item in B2 directory listing
-        logger.debug("lookupItem stub called")
-        replyHandler(nil, nil, fs_errorForPOSIXError(ENOENT))
+        lookupItemImpl(named: name, inDirectory: directory, replyHandler: replyHandler)
     }
 
-    // MARK: - Enumerate Directory
+    // MARK: - Enumerate Directory (→ B2VolumeOperations.swift)
 
     func enumerateDirectory(
         _ directory: FSItem,
@@ -263,12 +261,10 @@ class B2Volume: FSVolume,
         packer: FSDirectoryEntryPacker,
         replyHandler: @escaping (FSDirectoryVerifier, (any Error)?) -> Void
     ) {
-        // TODO: Plan 03 implementation — list B2 directory contents
-        logger.debug("enumerateDirectory stub called")
-        replyHandler(.initial, fs_errorForPOSIXError(ENOSYS))
+        enumerateDirectoryImpl(directory, startingAt: cookie, verifier: verifier, attributes: attributes, packer: packer, replyHandler: replyHandler)
     }
 
-    // MARK: - Create Item
+    // MARK: - Create Item (→ B2VolumeOperations.swift)
 
     func createItem(
         named name: FSFileName,
@@ -277,9 +273,7 @@ class B2Volume: FSVolume,
         attributes: FSItem.SetAttributesRequest,
         replyHandler: @escaping (FSItem?, FSFileName?, (any Error)?) -> Void
     ) {
-        // TODO: Plan 03 implementation — create file/directory in B2
-        logger.debug("createItem stub called")
-        replyHandler(nil, nil, fs_errorForPOSIXError(ENOSYS))
+        createItemImpl(named: name, type: type, inDirectory: directory, attributes: attributes, replyHandler: replyHandler)
     }
 
     // MARK: - Create Symbolic Link
@@ -309,7 +303,7 @@ class B2Volume: FSVolume,
         replyHandler(nil, fs_errorForPOSIXError(ENOTSUP))
     }
 
-    // MARK: - Remove Item
+    // MARK: - Remove Item (→ B2VolumeOperations.swift)
 
     func removeItem(
         _ item: FSItem,
@@ -317,12 +311,10 @@ class B2Volume: FSVolume,
         fromDirectory directory: FSItem,
         replyHandler: @escaping ((any Error)?) -> Void
     ) {
-        // TODO: Plan 03 implementation — delete file from B2
-        logger.debug("removeItem stub called")
-        replyHandler(fs_errorForPOSIXError(ENOSYS))
+        removeItemImpl(item, named: name, fromDirectory: directory, replyHandler: replyHandler)
     }
 
-    // MARK: - Rename Item
+    // MARK: - Rename Item (→ B2VolumeOperations.swift)
 
     func renameItem(
         _ item: FSItem,
@@ -333,9 +325,7 @@ class B2Volume: FSVolume,
         overItem: FSItem?,
         replyHandler: @escaping (FSFileName?, (any Error)?) -> Void
     ) {
-        // TODO: Plan 03 implementation — rename via B2 copy + delete
-        logger.debug("renameItem stub called")
-        replyHandler(nil, fs_errorForPOSIXError(ENOSYS))
+        renameItemImpl(item, inDirectory: sourceDirectory, named: sourceName, to: destinationName, inDirectory: destinationDirectory, overItem: overItem, replyHandler: replyHandler)
     }
 
     // MARK: - Read Symbolic Link
@@ -349,75 +339,32 @@ class B2Volume: FSVolume,
         replyHandler(nil, fs_errorForPOSIXError(ENOTSUP))
     }
 
-    // MARK: - Get Attributes
+    // MARK: - Get Attributes (→ B2VolumeOperations.swift)
 
     func getAttributes(
         _ desiredAttributes: FSItem.GetAttributesRequest,
         of item: FSItem,
         replyHandler: @escaping (FSItem.Attributes?, (any Error)?) -> Void
     ) {
-        // TODO: Plan 03 implementation — return item attributes from cache/B2
-        guard let b2Item = item as? B2Item else {
-            replyHandler(nil, fs_errorForPOSIXError(EINVAL))
-            return
-        }
-
-        let attrs = FSItem.Attributes()
-        attrs.uid = getuid()
-        attrs.gid = getgid()
-        attrs.type = b2Item.isDirectory ? .directory : .file
-        attrs.mode = b2Item.isDirectory ? 0o755 : 0o644
-        attrs.linkCount = b2Item.isDirectory ? 2 : 1
-        attrs.size = UInt64(b2Item.contentLength)
-        attrs.allocSize = UInt64(b2Item.contentLength)
-        attrs.fileID = b2Item.itemIdentifier
-
-        let ts = b2Item.modificationTime.timeIntervalSince1970
-        let sec = Int(ts)
-        let nsec = Int((ts - Double(sec)) * 1_000_000_000)
-        let timespec = timespec(tv_sec: sec, tv_nsec: nsec)
-        attrs.modifyTime = timespec
-        attrs.changeTime = timespec
-        attrs.accessTime = timespec
-        attrs.birthTime = timespec
-
-        replyHandler(attrs, nil)
+        getAttributesImpl(desiredAttributes, of: item, replyHandler: replyHandler)
     }
 
-    // MARK: - Set Attributes
+    // MARK: - Set Attributes (→ B2VolumeOperations.swift)
 
     func setAttributes(
         _ newAttributes: FSItem.SetAttributesRequest,
         on item: FSItem,
         replyHandler: @escaping (FSItem.Attributes?, (any Error)?) -> Void
     ) {
-        // TODO: Plan 03 implementation — limited attribute setting for B2
-        // For now, acknowledge the request and return current attributes
-        guard let b2Item = item as? B2Item else {
-            replyHandler(nil, fs_errorForPOSIXError(EINVAL))
-            return
-        }
-
-        // Update size if requested (for truncation during file creation)
-        if newAttributes.isValid(.size) {
-            b2Item.contentLength = Int64(newAttributes.size)
-        }
-
-        // Return current attributes
-        getAttributes(FSItem.GetAttributesRequest(), of: item, replyHandler: replyHandler)
+        setAttributesImpl(newAttributes, on: item, replyHandler: replyHandler)
     }
 
-    // MARK: - Reclaim Item
+    // MARK: - Reclaim Item (→ B2VolumeOperations.swift)
 
     func reclaimItem(
         _ item: FSItem,
         replyHandler: @escaping ((any Error)?) -> Void
     ) {
-        // Clean up cached references when FSKit releases an item
-        if let b2Item = item as? B2Item {
-            removeCachedItem(for: b2Item.b2Path)
-            logger.debug("Reclaimed item: \(b2Item.b2Path, privacy: .public)")
-        }
-        replyHandler(nil)
+        reclaimItemImpl(item, replyHandler: replyHandler)
     }
 }
