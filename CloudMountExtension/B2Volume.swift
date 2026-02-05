@@ -3,8 +3,8 @@
 //  CloudMountExtension
 //
 //  FSVolume subclass representing a mounted B2 bucket.
-//  Implements the full set of volume operation protocols with
-//  stubs for operations that Plans 03 and 04 will fill in.
+//  Implements the full set of volume operation protocols.
+//  Operations delegated to B2VolumeOperations.swift and B2VolumeReadWrite.swift.
 //
 
 import FSKit
@@ -190,9 +190,7 @@ class B2Volume: FSVolume,
         modes: FSVolume.OpenModes,
         replyHandler: @escaping ((any Error)?) -> Void
     ) {
-        // TODO: Plan 04 implementation — download file to staging on open
-        logger.debug("openItem stub called")
-        replyHandler(nil)
+        openItemImpl(item, modes: modes, replyHandler: replyHandler)
     }
 
     func closeItem(
@@ -200,9 +198,7 @@ class B2Volume: FSVolume,
         modes: FSVolume.OpenModes,
         replyHandler: @escaping ((any Error)?) -> Void
     ) {
-        // TODO: Plan 04 implementation — upload staged file to B2 on close if dirty
-        logger.debug("closeItem stub called")
-        replyHandler(nil)
+        closeItemImpl(item, modes: modes, replyHandler: replyHandler)
     }
 
     // MARK: - ReadWrite Operations
@@ -214,9 +210,7 @@ class B2Volume: FSVolume,
         into buffer: FSMutableFileDataBuffer,
         replyHandler: @escaping (Int, (any Error)?) -> Void
     ) {
-        // TODO: Plan 04 implementation — read from staging file
-        logger.debug("read stub called")
-        replyHandler(0, fs_errorForPOSIXError(ENOSYS))
+        readImpl(from: item, at: offset, length: length, into: buffer, replyHandler: replyHandler)
     }
 
     func write(
@@ -225,9 +219,7 @@ class B2Volume: FSVolume,
         at offset: off_t,
         replyHandler: @escaping (Int, (any Error)?) -> Void
     ) {
-        // TODO: Plan 04 implementation — write to staging file
-        logger.debug("write stub called")
-        replyHandler(0, fs_errorForPOSIXError(ENOSYS))
+        writeImpl(contents: contents, to: item, at: offset, replyHandler: replyHandler)
     }
 
     // MARK: - Synchronize
@@ -236,8 +228,9 @@ class B2Volume: FSVolume,
         flags: FSSyncFlags,
         replyHandler: @escaping ((any Error)?) -> Void
     ) {
-        // TODO: Plan 03/04 — flush dirty items to B2
-        logger.debug("synchronize stub called")
+        // Synchronize is advisory — dirty items are uploaded on closeItem.
+        // For now, acknowledge without additional action.
+        logger.debug("synchronize called (dirty items flushed on close)")
         replyHandler(nil)
     }
 

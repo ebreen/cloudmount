@@ -21,6 +21,7 @@
 		6625A2E8E51580AC5697F74E /* StagingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB55E7BB313AF5505688BB3 /* StagingManager.swift */; };
 		6BBDA27937D8E320CC233C27 /* CloudMountKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F7BEF9119DCC2176BEED910 /* CloudMountKit.framework */; };
 		70AD4F4CD5F8C873376731CF /* AccountConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2324CD292FFD9B3F40A01F /* AccountConfig.swift */; };
+		8D91BF9C3C9FD67B372C50C7 /* B2VolumeReadWrite.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EC990B42BB7C43B2B42AA23 /* B2VolumeReadWrite.swift */; };
 		94763A9608EC873FCCF82B19 /* CloudMountExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7A2C373BFE3870E87CF3EB4 /* CloudMountExtension.swift */; };
 		9D66187D47E121D7451784B3 /* B2Volume.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75125AF55CFF265B29F419C0 /* B2Volume.swift */; };
 		A1B11A900AED50B9A2FD93BE /* B2AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2395CEA9F2CD28B3333B9295 /* B2AuthManager.swift */; };
@@ -94,6 +95,7 @@
 		257F743448AA73718FA3B3E0 /* MetadataBlocklist.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataBlocklist.swift; sourceTree = "<group>"; };
 		267CDB85D51E3FACEC897026 /* B2Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2Types.swift; sourceTree = "<group>"; };
 		2BFED09AA99EFB129D2C6788 /* B2ItemAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2ItemAttributes.swift; sourceTree = "<group>"; };
+		2EC990B42BB7C43B2B42AA23 /* B2VolumeReadWrite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2VolumeReadWrite.swift; sourceTree = "<group>"; };
 		58F100E013EA0D11989456A8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5A482CA13FB69BC52FD66AD5 /* MenuContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuContentView.swift; sourceTree = "<group>"; };
 		6BC29851CE3B4D28A86E4F17 /* B2Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2Error.swift; sourceTree = "<group>"; };
@@ -210,6 +212,7 @@
 				2BFED09AA99EFB129D2C6788 /* B2ItemAttributes.swift */,
 				75125AF55CFF265B29F419C0 /* B2Volume.swift */,
 				DF70B2D69F4291D0EEECF41E /* B2VolumeOperations.swift */,
+				2EC990B42BB7C43B2B42AA23 /* B2VolumeReadWrite.swift */,
 				B7A2C373BFE3870E87CF3EB4 /* CloudMountExtension.swift */,
 				B9C31923BE4C26C839337F84 /* CloudMountFileSystem.swift */,
 				F56A1F700399746EA96DF1EF /* Info.plist */,
@@ -399,6 +402,7 @@
 				257B8068E2E5A551C41C6BC0 /* B2ItemAttributes.swift in Sources */,
 				9D66187D47E121D7451784B3 /* B2Volume.swift in Sources */,
 				C2858478837398FC38FA133B /* B2VolumeOperations.swift in Sources */,
+				8D91BF9C3C9FD67B372C50C7 /* B2VolumeReadWrite.swift in Sources */,
 				94763A9608EC873FCCF82B19 /* CloudMountExtension.swift in Sources */,
 				F8DA244C25F86687A7C5BE07 /* CloudMountFileSystem.swift in Sources */,
 				45ADD57E45601833AD9A03C7 /* MetadataBlocklist.swift in Sources */,
