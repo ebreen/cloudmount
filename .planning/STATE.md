@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 5 of 8 (Build System & B2 Client)
-Plan: 2 of 5 in current phase
+Plan: 3 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-05 — Completed 05-02-PLAN.md
+Last activity: 2026-02-05 — Completed 05-03-PLAN.md
 
-Progress: [██████████░░░░░░░░░░] 53% (16/~30 plans — v1.0 complete, v2.0 in progress)
+Progress: [███████████░░░░░░░░░] 57% (17/~30 plans — v1.0 complete, v2.0 in progress)
 
 ## What's Complete
 
@@ -27,7 +27,7 @@ Progress: [██████████░░░░░░░░░░] 53% (16
 ### v2.0 FSKit Pivot (In Progress)
 - [x] Phase 5 Plan 1: Build system migration (Xcode project with 3 targets)
 - [x] Phase 5 Plan 2: Credential store + config models (Keychain + SharedDefaults)
-- [ ] Phase 5 Plan 3: B2 API types + HTTP client
+- [x] Phase 5 Plan 3: B2 API types + HTTP client
 - [ ] Phase 5 Plan 4: B2AuthManager + B2Client + caches
 - [ ] Phase 5 Plan 5: App state rewiring
 
@@ -36,7 +36,7 @@ See: .planning/milestones/v1.0-ROADMAP.md
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
+- Total plans completed: 17
 - Average duration: —
 - Total execution time: —
 
@@ -48,7 +48,7 @@ See: .planning/milestones/v1.0-ROADMAP.md
 | 2. Core Mount & Browse | 4 | — | — |
 | 3. File I/O | 4 | — | — |
 | 4. Configuration & Polish | 2 | — | — |
-| 5. Build System & B2 Client | 2/5 | 9min | 4.5min |
+| 5. Build System & B2 Client | 3/5 | 13min | 4.3min |
 
 *Updated after each plan completion*
 
@@ -66,6 +66,8 @@ Recent decisions affecting current work:
 - Native Security.framework over KeychainAccess SPM — no third-party keychain dependency
 - nonisolated(unsafe) for KeychainHelper.accessGroup — Swift 6 concurrency, set-once pattern
 - Secrets in Keychain only, metadata in UserDefaults — clean separation
+- FlexibleInt64 for B2's inconsistent numeric encoding (Int64, String, null)
+- B2HTTPClient as stateless struct (not actor) — no mutable state, fully Sendable
 
 ### Blockers/Concerns
 
@@ -79,6 +81,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-05T22:09:59Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-02-05T22:10:49Z
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None
