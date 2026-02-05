@@ -67,7 +67,7 @@ Plans:
 
 Plans:
 - [x] 06-01-PLAN.md — B2Item FSItem subclass + MetadataBlocklist + StagingManager (foundation types)
-- [ ] 06-02-PLAN.md — Extension entry point + FileSystem lifecycle + B2Volume shell + Info.plist
+- [x] 06-02-PLAN.md — Extension entry point + FileSystem lifecycle + B2Volume shell + Info.plist
 - [ ] 06-03-PLAN.md — Volume operations: lookup, enumerate, create, remove, rename, attributes
 - [ ] 06-04-PLAN.md — Read/write + open/close operations + build verification
 
@@ -115,6 +115,6 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 3. File I/O | v1.0 | 4/4 | Complete | 2026-02-03 |
 | 4. Configuration & Polish | v1.0 | 2/2 | Complete | 2026-02-03 |
 | 5. Build System & B2 Client | v2.0 | 5/5 | Complete | 2026-02-05 |
-| 6. FSKit Filesystem | v2.0 | 1/4 | In progress | - |
+| 6. FSKit Filesystem | v2.0 | 2/4 | In progress | - |
 | 7. App Integration | v2.0 | 0/TBD | Not started | - |
 | 8. Distribution | v2.0 | 0/TBD | Not started | - |

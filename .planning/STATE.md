@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 6 of 8 (FSKit Filesystem)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-02-06 — Completed 06-01-PLAN.md
+Last activity: 2026-02-06 — Completed 06-02-PLAN.md
 
-Progress: [██████████████░░░░░░] 67% (20/~30 plans — v1.0 complete, v2.0 in progress)
+Progress: [██████████████░░░░░░] 70% (21/~30 plans — v1.0 complete, v2.0 in progress)
 
 ## What's Complete
 
@@ -31,13 +31,14 @@ Progress: [██████████████░░░░░░] 67% (20
 - [x] Phase 5 Plan 4: B2AuthManager + B2Client + caches
 - [x] Phase 5 Plan 5: App state rewiring
 - [x] Phase 6 Plan 1: B2Item + MetadataBlocklist + StagingManager (foundation types)
+- [x] Phase 6 Plan 2: Extension entry point + FileSystem lifecycle + B2Volume shell
 
 See: .planning/milestones/v1.0-ROADMAP.md
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
+- Total plans completed: 21
 - Average duration: —
 - Total execution time: —
 
@@ -50,7 +51,7 @@ See: .planning/milestones/v1.0-ROADMAP.md
 | 3. File I/O | 4 | — | — |
 | 4. Configuration & Polish | 2 | — | — |
 | 5. Build System & B2 Client | 5/5 | 20min | 4.0min |
-| 6. FSKit Filesystem | 1/4 | 3min | 3.0min |
+| 6. FSKit Filesystem | 2/4 | 29min | 14.5min |
 
 *Updated after each plan completion*
 
@@ -75,6 +76,8 @@ Recent decisions affecting current work:
 - B2Client instantiated per-validation in views rather than held on AppState — avoids actor isolation complexity in SwiftUI
 - SHA-256 hash for staging file names — avoids filesystem issues with long B2 paths
 - Actor isolation for StagingManager — matches FSKit's concurrent callback pattern
+- UncheckedSendableBox for FSKit ObjC reply handlers — Swift 6 concurrency bridge pattern
+- FSVolume nested Swift types (FSVolume.Operations, FSItem.Attributes) — ObjC types renamed in Swift
 
 ### Blockers/Concerns
 
@@ -88,6 +91,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06T00:04:00Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-02-05T23:34:37Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None
