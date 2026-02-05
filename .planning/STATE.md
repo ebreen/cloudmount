@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 5 of 8 (Build System & B2 Client)
-Plan: —
-Status: Ready to plan
-Last activity: 2026-02-05 — v2.0 roadmap created
+Plan: 1 of 5 in current phase
+Status: In progress
+Last activity: 2026-02-05 — Completed 05-01-PLAN.md
 
-Progress: [██████████░░░░░░░░░░] 48% (14/~25 plans — v1.0 complete, v2.0 starting)
+Progress: [██████████░░░░░░░░░░] 50% (15/~30 plans — v1.0 complete, v2.0 in progress)
 
 ## What's Complete
 
@@ -24,12 +24,19 @@ Progress: [██████████░░░░░░░░░░] 48% (14
 - [x] Phase 3: File I/O (4/4 plans)
 - [x] Phase 4: Configuration & Polish (2/2 plans)
 
+### v2.0 FSKit Pivot (In Progress)
+- [x] Phase 5 Plan 1: Build system migration (Xcode project with 3 targets)
+- [ ] Phase 5 Plan 2: B2 client in CloudMountKit
+- [ ] Phase 5 Plan 3: Credential store
+- [ ] Phase 5 Plan 4: Mount configuration
+- [ ] Phase 5 Plan 5: App state rewiring
+
 See: .planning/milestones/v1.0-ROADMAP.md
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
+- Total plans completed: 15
 - Average duration: —
 - Total execution time: —
 
@@ -41,6 +48,7 @@ See: .planning/milestones/v1.0-ROADMAP.md
 | 2. Core Mount & Browse | 4 | — | — |
 | 3. File I/O | 4 | — | — |
 | 4. Configuration & Polish | 2 | — | — |
+| 5. Build System & B2 Client | 1/5 | 5min | 5min |
 
 *Updated after each plan completion*
 
@@ -54,6 +62,8 @@ Recent decisions affecting current work:
 - Rust/macFUSE → Swift/FSKit: FSKit V2 eliminates macFUSE; pure Swift simplifies build
 - macOS 26+ minimum: FSKit V2 (FSGenericURLResource) requires Tahoe
 - SPM → Xcode project: FSKit extensions need .appex targets, Info.plist, entitlements
+- xcodegen for reproducible project generation from project.yml
+- CredentialStore removed with Sources/ — recreate in Plan 02
 
 ### Blockers/Concerns
 
@@ -63,10 +73,10 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+None.
 
 ## Session Continuity
 
-Last session: 2026-02-05
-Stopped at: v2.0 roadmap created, ready to plan Phase 5
+Last session: 2026-02-05T21:59:43Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
