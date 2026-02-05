@@ -24,16 +24,6 @@ struct MenuContentView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.openWindow) private var openWindow
     
-    /// Color for the connection health indicator
-    private var healthColor: Color {
-        if !appState.isDaemonRunning { return .red }
-        switch appState.connectionHealth {
-        case "degraded": return .yellow
-        case "unhealthy": return .red
-        default: return .green
-        }
-    }
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header
@@ -42,14 +32,7 @@ struct MenuContentView: View {
             Divider()
                 .padding(.vertical, 8)
             
-            // macFUSE status
-            if !appState.macFUSEInstalled {
-                macFUSEWarning
-                Divider()
-                    .padding(.vertical, 8)
-            }
-            
-            // Buckets section (placeholder)
+            // Buckets section
             bucketsSection
             
             Divider()
@@ -70,9 +53,9 @@ struct MenuContentView: View {
                     .fontWeight(.semibold)
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(healthColor)
+                        .fill(.secondary)
                         .frame(width: 8, height: 8)
-                    Text(appState.isDaemonRunning ? "\(appState.mountedBuckets.count) mounted" : "Daemon offline")
+                    Text("Not connected")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -80,35 +63,8 @@ struct MenuContentView: View {
             Spacer()
             Image(systemName: "externaldrive.fill.badge.icloud")
                 .font(.title2)
-                .foregroundStyle(appState.isDaemonRunning ? .blue : .secondary)
+                .foregroundStyle(.secondary)
         }
-    }
-    
-    private var macFUSEWarning: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
-                .font(.body)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("macFUSE Required")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                Button("Download") {
-                    NSWorkspace.shared.open(URL(string: "https://macfuse.io")!)
-                }
-                .buttonStyle(.link)
-                .font(.subheadline)
-            }
-            Spacer()
-            Button("Check") {
-                appState.checkMacFUSE()
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-        }
-        .padding(10)
-        .background(.orange.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
     private var bucketsSection: some View {
@@ -143,18 +99,13 @@ struct MenuContentView: View {
                             }
                         }
                         Spacer()
+                        // TODO: Re-enable mount/unmount in Plan 05
                         Button(bucket.isMounted ? "Unmount" : "Mount") {
-                            Task {
-                                if bucket.isMounted {
-                                    await appState.unmountBucket(bucket)
-                                } else {
-                                    await appState.mountBucket(bucket)
-                                }
-                            }
+                            // Stub — will be rewired in Plan 05
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.mini)
-                        .disabled(!appState.isDaemonRunning || !appState.macFUSEInstalled)
+                        .disabled(true)
                     }
                     .padding(.vertical, 2)
                 }
@@ -171,28 +122,6 @@ struct MenuContentView: View {
                         .foregroundStyle(.red)
                 }
                 .padding(.top, 4)
-            }
-            
-            // Show recent errors from daemon
-            if !appState.recentErrors.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("RECENT ERRORS")
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.tertiary)
-                    ForEach(appState.recentErrors.suffix(3), id: \.timestamp) { err in
-                        HStack(spacing: 4) {
-                            Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.orange)
-                                .font(.caption2)
-                            Text("\(err.operation): \(err.error)")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                }
-                .padding(.top, 6)
             }
         }
     }

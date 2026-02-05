@@ -35,7 +35,6 @@ struct CredentialsPane: View {
     @State private var showKey = false
     @State private var isConnecting = false
     @State private var connectionStatus: ConnectionStatus = .notConnected
-    @State private var availableBuckets: [DaemonBucketInfo] = []
     
     enum ConnectionStatus: Equatable {
         case notConnected
@@ -136,9 +135,6 @@ struct CredentialsPane: View {
             }
         }
         .padding(20)
-        .onAppear {
-            loadSavedCredentials()
-        }
     }
     
     @ViewBuilder
@@ -189,51 +185,17 @@ struct CredentialsPane: View {
         return false
     }
     
-    private func loadSavedCredentials() {
-        // Load from keychain if previously saved
-        if let creds = try? CredentialStore.shared.getB2Credentials() {
-            keyId = creds.keyId
-            applicationKey = creds.applicationKey
-            // Auto-connect if we have saved credentials
-            if !keyId.isEmpty && !applicationKey.isEmpty {
-                connect()
-            }
-        }
-    }
-    
     private func connect() {
+        // TODO: Rewire to B2 client in Plan 05
         isConnecting = true
         connectionStatus = .connecting
         
+        // Stub — no-op for now
         Task {
-            do {
-                // Save credentials first
-                try CredentialStore.shared.saveB2Credentials(keyId: keyId, applicationKey: applicationKey)
-                
-                // List buckets via daemon
-                let buckets = try await DaemonClient.shared.listBuckets(keyId: keyId, key: applicationKey)
-                
-                await MainActor.run {
-                    isConnecting = false
-                    availableBuckets = buckets
-                    connectionStatus = .connected(bucketCount: buckets.count)
-                    
-                    // Auto-add all buckets to config if not already present
-                    for bucket in buckets {
-                        if !appState.bucketConfigs.contains(where: { $0.name == bucket.bucketName }) {
-                            appState.addBucket(name: bucket.bucketName, mountpoint: "/Volumes/\(bucket.bucketName)")
-                        }
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    isConnecting = false
-                    if case DaemonError.daemonNotRunning = error {
-                        connectionStatus = .error("Daemon not running. Start it with: cd Daemon/CloudMountDaemon && cargo run")
-                    } else {
-                        connectionStatus = .error(error.localizedDescription)
-                    }
-                }
+            try? await Task.sleep(for: .milliseconds(100))
+            await MainActor.run {
+                isConnecting = false
+                connectionStatus = .error("Not yet connected to B2 (pending Plan 05)")
             }
         }
     }
@@ -242,7 +204,6 @@ struct CredentialsPane: View {
         connectionStatus = .notConnected
         keyId = ""
         applicationKey = ""
-        try? CredentialStore.shared.deleteB2Credentials()
         appState.clearAllBuckets()
     }
 }

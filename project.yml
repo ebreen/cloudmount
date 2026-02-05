@@ -1,0 +1,68 @@
+name: CloudMount
+options:
+  bundleIdPrefix: com.cloudmount
+  deploymentTarget:
+    macOS: "26.0"
+  xcodeVersion: "26"
+  defaultConfig: Debug
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+
+targets:
+  CloudMount:
+    type: application
+    platform: macOS
+    sources:
+      - path: CloudMount
+        excludes:
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cloudmount.app
+        INFOPLIST_FILE: CloudMount/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CloudMount/CloudMount.entitlements
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: false
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+    dependencies:
+      - target: CloudMountKit
+        embed: true
+        codeSign: true
+      - target: CloudMountExtension
+        embed: true
+        codeSign: true
+
+  CloudMountExtension:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: CloudMountExtension
+        excludes:
+          - "*.entitlements"
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cloudmount.app.extension
+        INFOPLIST_FILE: CloudMountExtension/Info.plist
+        CODE_SIGN_ENTITLEMENTS: CloudMountExtension/CloudMountExtension.entitlements
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: false
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
+    dependencies:
+      - target: CloudMountKit
+        embed: false
+
+  CloudMountKit:
+    type: framework
+    platform: macOS
+    sources:
+      - path: CloudMountKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.cloudmount.kit
+        INFOPLIST_FILE: CloudMountKit/Info.plist
+        GENERATE_INFOPLIST_FILE: false
+        DEFINES_MODULE: true
+        CODE_SIGN_STYLE: Automatic
