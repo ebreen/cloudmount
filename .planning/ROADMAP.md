@@ -44,12 +44,14 @@ See: .planning/milestones/v1.0-ROADMAP.md for full details.
   3. App Group is configured and credentials stored via Keychain are accessible from both host app and extension targets
   4. Swift B2 client can authenticate, list files, download, upload, delete, copy, and create folders against a real B2 bucket
   5. B2 auth tokens refresh automatically without user intervention, and metadata cache reduces redundant API calls
-**Plans**: TBD
+**Plans:** 5 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
-- [ ] 05-03: TBD
+- [ ] 05-01-PLAN.md — Remove Rust/macFUSE/SPM + create Xcode project with 3 targets
+- [ ] 05-02-PLAN.md — Native Keychain credential store + account/mount config models
+- [ ] 05-03-PLAN.md — B2 API types, error types, and HTTP client (low-level)
+- [ ] 05-04-PLAN.md — B2AuthManager + B2Client actor + metadata/file caches
+- [ ] 05-05-PLAN.md — Rewire host app UI to CloudMountKit stack
 
 ### Phase 6: FSKit Filesystem
 **Goal**: Users can mount a B2 bucket via the FSKit extension and browse, read, write, and delete files in Finder as if it were a local volume
@@ -111,7 +113,7 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 2. Core Mount & Browse | v1.0 | 4/4 | Complete | 2026-02-03 |
 | 3. File I/O | v1.0 | 4/4 | Complete | 2026-02-03 |
 | 4. Configuration & Polish | v1.0 | 2/2 | Complete | 2026-02-03 |
-| 5. Build System & B2 Client | v2.0 | 0/TBD | Not started | - |
+| 5. Build System & B2 Client | v2.0 | 0/5 | Not started | - |
 | 6. FSKit Filesystem | v2.0 | 0/TBD | Not started | - |
 | 7. App Integration | v2.0 | 0/TBD | Not started | - |
 | 8. Distribution | v2.0 | 0/TBD | Not started | - |
