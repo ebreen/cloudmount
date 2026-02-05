@@ -1,103 +1,107 @@
 import SwiftUI
-
-/// Bucket configuration with mount status
-struct BucketConfig: Identifiable, Hashable, Codable {
-    let id: String
-    let name: String
-    var mountpoint: String
-    var isMounted: Bool = false
-    /// Disk usage in bytes (not persisted)
-    var totalBytesUsed: Int64?
-    
-    enum CodingKeys: String, CodingKey {
-        case id, name, mountpoint
-        // isMounted and totalBytesUsed are runtime state — not persisted
-    }
-    
-    static func == (lhs: BucketConfig, rhs: BucketConfig) -> Bool {
-        lhs.id == rhs.id && lhs.name == rhs.name && lhs.mountpoint == rhs.mountpoint && lhs.isMounted == rhs.isMounted
-    }
-    
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(id)
-        hasher.combine(name)
-        hasher.combine(mountpoint)
-        hasher.combine(isMounted)
-    }
-    
-    init(name: String, mountpoint: String = "") {
-        self.id = name
-        self.name = name
-        self.mountpoint = mountpoint.isEmpty ? "/Volumes/\(name)" : mountpoint
-    }
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        name = try container.decode(String.self, forKey: .name)
-        mountpoint = try container.decode(String.self, forKey: .mountpoint)
-        isMounted = false
-        totalBytesUsed = nil
-    }
-}
-
-/// Persistence store for bucket configurations
-struct BucketConfigStore {
-    /// File URL for persisted bucket configs
-    static var fileURL: URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = appSupport.appendingPathComponent("CloudMount")
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("buckets.json")
-    }
-    
-    /// Save bucket configs to disk
-    static func save(_ configs: [BucketConfig]) {
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .prettyPrinted
-        try? encoder.encode(configs).write(to: fileURL)
-    }
-    
-    /// Load bucket configs from disk
-    static func load() -> [BucketConfig] {
-        guard let data = try? Data(contentsOf: fileURL) else { return [] }
-        return (try? JSONDecoder().decode([BucketConfig].self, from: data)) ?? []
-    }
-}
+import CloudMountKit
 
 @MainActor
 final class AppState: ObservableObject {
-    @Published var storedBuckets: [String] = []
-    @Published var bucketConfigs: [BucketConfig] = []
+    // MARK: - Published State
+
+    @Published var accounts: [B2Account] = []
+    @Published var mountConfigs: [MountConfiguration] = []
     @Published var lastError: String?
-    
+    @Published var isConnected: Bool = false
+
+    // MARK: - Dependencies
+
+    let sharedDefaults = SharedDefaults.shared
+
+    // MARK: - Init
+
     init() {
-        bucketConfigs = BucketConfigStore.load()
+        loadState()
     }
-    
-    // MARK: - Bucket Management (stubs — rewired in Plan 05)
-    
-    /// Add a new bucket configuration
-    func addBucket(name: String, mountpoint: String) {
-        let config = BucketConfig(name: name, mountpoint: mountpoint)
-        if !bucketConfigs.contains(where: { $0.name == name }) {
-            bucketConfigs.append(config)
-            storedBuckets.append(name)
-            BucketConfigStore.save(bucketConfigs)
+
+    // MARK: - State Persistence
+
+    /// Load accounts and mount configs from SharedDefaults.
+    func loadState() {
+        accounts = sharedDefaults.loadAccounts()
+        mountConfigs = sharedDefaults.loadMountConfigurations()
+        isConnected = !accounts.isEmpty
+    }
+
+    // MARK: - Account Management
+
+    /// Add a B2 account and save its credentials to the keychain.
+    func addAccount(_ account: B2Account, applicationKey: String) {
+        // Skip if account with same keyId already exists
+        guard !accounts.contains(where: { $0.keyId == account.keyId }) else { return }
+
+        do {
+            try CredentialStore.saveAccount(account, applicationKey: applicationKey)
+            accounts.append(account)
+            sharedDefaults.saveAccounts(accounts)
+            isConnected = true
+        } catch {
+            lastError = "Failed to save credentials: \(error.localizedDescription)"
         }
     }
-    
-    /// Remove a bucket configuration
-    func removeBucket(_ bucket: BucketConfig) {
-        bucketConfigs.removeAll { $0.id == bucket.id }
-        storedBuckets.removeAll { $0 == bucket.name }
-        BucketConfigStore.save(bucketConfigs)
+
+    /// Remove a B2 account and its credentials.
+    func removeAccount(_ account: B2Account) {
+        do {
+            try CredentialStore.deleteAccount(id: account.id)
+        } catch {
+            lastError = "Failed to delete credentials: \(error.localizedDescription)"
+        }
+
+        accounts.removeAll { $0.id == account.id }
+        // Remove mount configs associated with this account
+        mountConfigs.removeAll { $0.accountId == account.id }
+
+        sharedDefaults.saveAccounts(accounts)
+        sharedDefaults.saveMountConfigurations(mountConfigs)
+        isConnected = !accounts.isEmpty
     }
-    
-    /// Clear all bucket configurations (used by disconnect flow)
-    func clearAllBuckets() {
-        bucketConfigs = []
-        storedBuckets = []
-        BucketConfigStore.save([])
+
+    // MARK: - Mount Configuration Management
+
+    /// Add a mount configuration for a bucket.
+    func addMountConfig(_ config: MountConfiguration) {
+        guard !mountConfigs.contains(where: { $0.id == config.id }) else { return }
+        mountConfigs.append(config)
+        sharedDefaults.saveMountConfigurations(mountConfigs)
+    }
+
+    /// Remove a mount configuration.
+    func removeMountConfig(_ config: MountConfiguration) {
+        mountConfigs.removeAll { $0.id == config.id }
+        sharedDefaults.saveMountConfigurations(mountConfigs)
+    }
+
+    // MARK: - Mount/Unmount Stubs (Phase 7)
+
+    /// Mount a configured bucket. Stub — wired in Phase 7.
+    func mount(_ config: MountConfiguration) {
+        lastError = "Mount not yet implemented (Phase 7)"
+    }
+
+    /// Unmount a mounted bucket. Stub — wired in Phase 7.
+    func unmount(_ config: MountConfiguration) {
+        lastError = "Unmount not yet implemented (Phase 7)"
+    }
+
+    // MARK: - Clear All
+
+    /// Disconnect: remove all accounts, mount configs, and credentials.
+    func clearAll() {
+        for account in accounts {
+            try? CredentialStore.deleteAccount(id: account.id)
+        }
+        accounts = []
+        mountConfigs = []
+        isConnected = false
+        lastError = nil
+        sharedDefaults.saveAccounts([])
+        sharedDefaults.saveMountConfigurations([])
     }
 }
