@@ -25,7 +25,11 @@
 		<key>NSExtensionPointIdentifier</key>
 		<string>com.apple.filesystems.fs-module</string>
 		<key>NSExtensionPrincipalClass</key>
-		<string>$(PRODUCT_MODULE_NAME).CloudMountExtension</string>
+		<string>$(PRODUCT_MODULE_NAME).CloudMountExtensionMain</string>
+		<key>FSSupportedSchemes</key>
+		<array>
+			<string>b2</string>
+		</array>
 	</dict>
 </dict>
 </plist>
