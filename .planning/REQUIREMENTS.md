@@ -9,11 +9,11 @@ Requirements for FSKit pivot and distribution. Each maps to roadmap phases.
 
 ### Build System
 
-- [ ] **BUILD-01**: Project uses Xcode project with app target and FSKit extension target (replacing Package.swift)
-- [ ] **BUILD-02**: Shared framework target contains code used by both app and extension (B2 types, config models, credential access)
-- [ ] **BUILD-03**: App Group configured for Keychain sharing between app and extension processes
-- [ ] **BUILD-04**: Rust daemon, Cargo.toml, Cargo.lock, and all Rust source files removed from project
-- [ ] **BUILD-05**: macFUSE detection code and references removed from app
+- [x] **BUILD-01**: Project uses Xcode project with app target and FSKit extension target (replacing Package.swift)
+- [x] **BUILD-02**: Shared framework target contains code used by both app and extension (B2 types, config models, credential access)
+- [x] **BUILD-03**: App Group configured for Keychain sharing between app and extension processes
+- [x] **BUILD-04**: Rust daemon, Cargo.toml, Cargo.lock, and all Rust source files removed from project
+- [x] **BUILD-05**: macFUSE detection code and references removed from app
 
 ### FSKit Filesystem
 
@@ -27,16 +27,16 @@ Requirements for FSKit pivot and distribution. Each maps to roadmap phases.
 
 ### B2 API Client (Swift)
 
-- [ ] **B2-01**: Swift B2 client authenticates with Backblaze (authorize_account) and retrieves API URL + auth token
-- [ ] **B2-02**: Client lists file names with prefix/delimiter support for virtual directory navigation
-- [ ] **B2-03**: Client downloads files by name with support for range requests
-- [ ] **B2-04**: Client uploads files (get_upload_url + upload_file flow)
-- [ ] **B2-05**: Client deletes file versions
-- [ ] **B2-06**: Client copies files server-side (used for rename: copy + delete)
-- [ ] **B2-07**: Client creates folder markers (zero-byte files with trailing /)
-- [ ] **B2-08**: Auth token refreshes automatically on expiry (24h)
-- [ ] **B2-09**: In-memory metadata cache with TTL-based expiration reduces B2 API calls
-- [ ] **B2-10**: Local file read cache stores downloaded files on disk to avoid re-fetching
+- [x] **B2-01**: Swift B2 client authenticates with Backblaze (authorize_account) and retrieves API URL + auth token
+- [x] **B2-02**: Client lists file names with prefix/delimiter support for virtual directory navigation
+- [x] **B2-03**: Client downloads files by name with support for range requests
+- [x] **B2-04**: Client uploads files (get_upload_url + upload_file flow)
+- [x] **B2-05**: Client deletes file versions
+- [x] **B2-06**: Client copies files server-side (used for rename: copy + delete)
+- [x] **B2-07**: Client creates folder markers (zero-byte files with trailing /)
+- [x] **B2-08**: Auth token refreshes automatically on expiry (24h)
+- [x] **B2-09**: In-memory metadata cache with TTL-based expiration reduces B2 API calls
+- [x] **B2-10**: Local file read cache stores downloaded files on disk to avoid re-fetching
 
 ### App Integration
 
@@ -104,21 +104,21 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUILD-01 | Phase 5 | Pending |
-| BUILD-02 | Phase 5 | Pending |
-| BUILD-03 | Phase 5 | Pending |
-| BUILD-04 | Phase 5 | Pending |
-| BUILD-05 | Phase 5 | Pending |
-| B2-01 | Phase 5 | Pending |
-| B2-02 | Phase 5 | Pending |
-| B2-03 | Phase 5 | Pending |
-| B2-04 | Phase 5 | Pending |
-| B2-05 | Phase 5 | Pending |
-| B2-06 | Phase 5 | Pending |
-| B2-07 | Phase 5 | Pending |
-| B2-08 | Phase 5 | Pending |
-| B2-09 | Phase 5 | Pending |
-| B2-10 | Phase 5 | Pending |
+| BUILD-01 | Phase 5 | Complete |
+| BUILD-02 | Phase 5 | Complete |
+| BUILD-03 | Phase 5 | Complete |
+| BUILD-04 | Phase 5 | Complete |
+| BUILD-05 | Phase 5 | Complete |
+| B2-01 | Phase 5 | Complete |
+| B2-02 | Phase 5 | Complete |
+| B2-03 | Phase 5 | Complete |
+| B2-04 | Phase 5 | Complete |
+| B2-05 | Phase 5 | Complete |
+| B2-06 | Phase 5 | Complete |
+| B2-07 | Phase 5 | Complete |
+| B2-08 | Phase 5 | Complete |
+| B2-09 | Phase 5 | Complete |
+| B2-10 | Phase 5 | Complete |
 | FSKIT-01 | Phase 6 | Pending |
 | FSKIT-02 | Phase 6 | Pending |
 | FSKIT-03 | Phase 6 | Pending |
@@ -151,4 +151,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 after roadmap creation*
+*Last updated: 2026-02-05 after Phase 5 completion*
