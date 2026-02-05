@@ -1,4 +1,5 @@
 import SwiftUI
+import CloudMountKit
 
 // Custom button style with hover highlight
 struct MenuButtonStyle: ButtonStyle {
@@ -32,8 +33,8 @@ struct MenuContentView: View {
             Divider()
                 .padding(.vertical, 8)
             
-            // Buckets section
-            bucketsSection
+            // Mounts section
+            mountsSection
             
             Divider()
                 .padding(.vertical, 8)
@@ -53,9 +54,9 @@ struct MenuContentView: View {
                     .fontWeight(.semibold)
                 HStack(spacing: 4) {
                     Circle()
-                        .fill(.secondary)
+                        .fill(appState.isConnected ? Color.green : Color.secondary)
                         .frame(width: 8, height: 8)
-                    Text("Not connected")
+                    Text(appState.isConnected ? "Connected" : "Not connected")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -67,45 +68,38 @@ struct MenuContentView: View {
         }
     }
     
-    private var bucketsSection: some View {
+    private var mountsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("BUCKETS")
+            Text("MOUNTS")
                 .font(.caption)
                 .fontWeight(.semibold)
                 .foregroundStyle(.tertiary)
             
-            if appState.bucketConfigs.isEmpty {
-                Text("No buckets configured")
+            if appState.mountConfigs.isEmpty {
+                Text("No mounts configured")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 4)
             } else {
-                ForEach(appState.bucketConfigs) { bucket in
+                ForEach(appState.mountConfigs) { config in
                     HStack {
-                        Image(systemName: bucket.isMounted ? "externaldrive.fill" : "folder.fill")
-                            .foregroundStyle(bucket.isMounted ? .green : .blue)
+                        Image(systemName: "externaldrive.fill")
+                            .foregroundStyle(.blue)
                         VStack(alignment: .leading, spacing: 1) {
-                            Text(bucket.name)
+                            Text(config.bucketName)
                                 .font(.subheadline)
-                            if bucket.isMounted {
-                                HStack(spacing: 0) {
-                                    Text(bucket.mountpoint)
-                                    if let bytes = bucket.totalBytesUsed {
-                                        Text(" · \(ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file))")
-                                    }
-                                }
+                            Text(config.mountPoint)
                                 .font(.caption2)
                                 .foregroundStyle(.tertiary)
-                            }
                         }
                         Spacer()
-                        // TODO: Re-enable mount/unmount in Plan 05
-                        Button(bucket.isMounted ? "Unmount" : "Mount") {
-                            // Stub — will be rewired in Plan 05
+                        // Mount/unmount — stubs for Phase 7
+                        Button("Mount") {
+                            appState.mount(config)
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.mini)
-                        .disabled(true)
+                        .disabled(true) // Enabled in Phase 7
                     }
                     .padding(.vertical, 2)
                 }
@@ -176,7 +170,7 @@ struct MenuContentView: View {
         NSApplication.shared.orderFrontStandardAboutPanel(
             options: [
                 .applicationName: "CloudMount",
-                .applicationVersion: "0.1.0",
+                .applicationVersion: "2.0.0",
                 .credits: NSAttributedString(
                     string: "Mount Backblaze B2 buckets as local drives",
                     attributes: [.font: NSFont.systemFont(ofSize: 11)]

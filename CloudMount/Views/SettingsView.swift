@@ -1,4 +1,5 @@
 import SwiftUI
+import CloudMountKit
 
 struct SettingsView: View {
     @EnvironmentObject var appState: AppState
@@ -135,6 +136,15 @@ struct CredentialsPane: View {
             }
         }
         .padding(20)
+        .onAppear {
+            // Pre-fill from first saved account if available
+            if let account = appState.accounts.first,
+               let creds = CredentialStore.loadCredentials(id: account.id) {
+                keyId = creds.keyId
+                applicationKey = creds.applicationKey
+                connectionStatus = .connected(bucketCount: appState.mountConfigs.count)
+            }
+        }
     }
     
     @ViewBuilder
@@ -154,7 +164,7 @@ struct CredentialsPane: View {
             HStack(spacing: 6) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.green)
-                Text("Connected - \(count) bucket\(count == 1 ? "" : "s") available")
+                Text("Connected — \(count) bucket\(count == 1 ? "" : "s") available")
             }
             .font(.subheadline)
             .padding(10)
@@ -186,16 +196,39 @@ struct CredentialsPane: View {
     }
     
     private func connect() {
-        // TODO: Rewire to B2 client in Plan 05
         isConnecting = true
         connectionStatus = .connecting
         
-        // Stub — no-op for now
+        let trimmedKeyId = keyId.trimmingCharacters(in: .whitespaces)
+        let trimmedKey = applicationKey.trimmingCharacters(in: .whitespaces)
+        
         Task {
-            try? await Task.sleep(for: .milliseconds(100))
-            await MainActor.run {
-                isConnecting = false
-                connectionStatus = .error("Not yet connected to B2 (pending Plan 05)")
+            do {
+                // Validate credentials by creating a B2Client and listing buckets
+                let client = try await B2Client(
+                    keyId: trimmedKeyId,
+                    applicationKey: trimmedKey
+                )
+                let buckets = try await client.listBuckets()
+                
+                await MainActor.run {
+                    // Save account
+                    let account = B2Account(
+                        label: "Default",
+                        keyId: trimmedKeyId,
+                        lastAuthorized: Date()
+                    )
+                    appState.addAccount(account, applicationKey: trimmedKey)
+                    
+                    // Update status
+                    connectionStatus = .connected(bucketCount: buckets.count)
+                    isConnecting = false
+                }
+            } catch {
+                await MainActor.run {
+                    connectionStatus = .error(error.localizedDescription)
+                    isConnecting = false
+                }
             }
         }
     }
@@ -204,7 +237,7 @@ struct CredentialsPane: View {
         connectionStatus = .notConnected
         keyId = ""
         applicationKey = ""
-        appState.clearAllBuckets()
+        appState.clearAll()
     }
 }
 
@@ -212,25 +245,26 @@ struct CredentialsPane: View {
 
 struct BucketsPane: View {
     @EnvironmentObject var appState: AppState
-    @State private var newBucketName = ""
-    @State private var newMountpoint = ""
+    @State private var availableBuckets: [B2BucketInfo] = []
+    @State private var isLoading = false
+    @State private var errorMessage: String?
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("CONFIGURED BUCKETS")
+            Text("CONFIGURED MOUNTS")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
             
-            if appState.bucketConfigs.isEmpty {
+            if appState.mountConfigs.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "folder.badge.plus")
                         .font(.system(size: 32))
                         .foregroundStyle(.tertiary)
-                    Text("No buckets configured")
+                    Text("No mounts configured")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    Text("Add a bucket name below to get started")
+                    Text("Connect your B2 account first, then fetch buckets to add mounts")
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                 }
@@ -239,9 +273,9 @@ struct BucketsPane: View {
             } else {
                 ScrollView {
                     VStack(spacing: 8) {
-                        ForEach(appState.bucketConfigs) { bucket in
-                            BucketRow(bucket: bucket) {
-                                appState.removeBucket(bucket)
+                        ForEach(appState.mountConfigs) { config in
+                            MountConfigRow(config: config) {
+                                appState.removeMountConfig(config)
                             }
                         }
                     }
@@ -251,40 +285,57 @@ struct BucketsPane: View {
             
             Divider()
             
-            // Add new bucket
-            Text("ADD BUCKET")
+            // Fetch & add buckets
+            Text("ADD MOUNT FROM B2")
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
             
-            HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Bucket Name")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    TextField("my-bucket", text: $newBucketName)
-                        .textFieldStyle(.roundedBorder)
+            if !availableBuckets.isEmpty {
+                ScrollView {
+                    VStack(spacing: 4) {
+                        ForEach(availableBuckets, id: \.bucketId) { bucket in
+                            let alreadyAdded = appState.mountConfigs.contains { $0.bucketId == bucket.bucketId }
+                            HStack {
+                                Image(systemName: "folder.fill")
+                                    .foregroundStyle(.blue)
+                                Text(bucket.bucketName)
+                                    .font(.subheadline)
+                                Spacer()
+                                Button(alreadyAdded ? "Added" : "Add Mount") {
+                                    addMount(for: bucket)
+                                }
+                                .buttonStyle(.bordered)
+                                .controlSize(.small)
+                                .disabled(alreadyAdded)
+                            }
+                            .padding(.vertical, 2)
+                        }
+                    }
                 }
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Mount Point (optional)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    TextField("/Volumes/...", text: $newMountpoint)
-                        .textFieldStyle(.roundedBorder)
-                    Text("Must be an absolute path (e.g., /Volumes/my-bucket)")
-                        .font(.caption2)
-                        .foregroundStyle(.quaternary)
-                }
-                
+                .frame(maxHeight: 100)
+            }
+            
+            if let error = errorMessage {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+            
+            HStack {
+                Spacer()
                 Button {
-                    addBucket()
+                    fetchBuckets()
                 } label: {
-                    Image(systemName: "plus.circle.fill")
+                    if isLoading {
+                        ProgressView()
+                            .controlSize(.small)
+                    } else {
+                        Text("Fetch Buckets")
+                    }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(newBucketName.trimmingCharacters(in: .whitespaces).isEmpty)
-                .padding(.top, 16)
+                .disabled(appState.accounts.isEmpty || isLoading)
             }
             
             Spacer()
@@ -292,53 +343,70 @@ struct BucketsPane: View {
         .padding(20)
     }
     
-    private func addBucket() {
-        let name = newBucketName.trimmingCharacters(in: .whitespaces)
-        var mount = newMountpoint.trimmingCharacters(in: .whitespaces)
-        
-        // Default to /Volumes/{name} if empty
-        if mount.isEmpty {
-            mount = "/Volumes/\(name)"
-        } else if !mount.hasPrefix("/") {
-            // Ensure absolute path — prepend /Volumes/ if not absolute
-            mount = "/Volumes/\(mount)"
+    private func fetchBuckets() {
+        guard let account = appState.accounts.first,
+              let creds = CredentialStore.loadCredentials(id: account.id)
+        else {
+            errorMessage = "No account credentials found. Connect first."
+            return
         }
         
-        appState.addBucket(name: name, mountpoint: mount)
-        newBucketName = ""
-        newMountpoint = ""
+        isLoading = true
+        errorMessage = nil
+        
+        Task {
+            do {
+                let client = try await B2Client(
+                    keyId: creds.keyId,
+                    applicationKey: creds.applicationKey
+                )
+                let buckets = try await client.listBuckets()
+                
+                await MainActor.run {
+                    availableBuckets = buckets
+                    isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to fetch buckets: \(error.localizedDescription)"
+                    isLoading = false
+                }
+            }
+        }
+    }
+    
+    private func addMount(for bucket: B2BucketInfo) {
+        guard let account = appState.accounts.first else { return }
+        
+        let config = MountConfiguration(
+            accountId: account.id,
+            bucketId: bucket.bucketId,
+            bucketName: bucket.bucketName,
+            mountPoint: "/Volumes/\(bucket.bucketName)"
+        )
+        appState.addMountConfig(config)
     }
 }
 
-struct BucketRow: View {
-    let bucket: BucketConfig
+struct MountConfigRow: View {
+    let config: MountConfiguration
     let onDelete: () -> Void
     
     var body: some View {
         HStack {
-            Image(systemName: bucket.isMounted ? "externaldrive.fill" : "folder.fill")
-                .foregroundStyle(bucket.isMounted ? .green : .blue)
+            Image(systemName: "externaldrive.fill")
+                .foregroundStyle(.blue)
             
             VStack(alignment: .leading, spacing: 2) {
-                Text(bucket.name)
+                Text(config.bucketName)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                Text(bucket.mountpoint)
+                Text(config.mountPoint)
                     .font(.caption)
                     .foregroundStyle(.tertiary)
             }
             
             Spacer()
-            
-            if bucket.isMounted {
-                Text("Mounted")
-                    .font(.caption)
-                    .foregroundStyle(.green)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(.green.opacity(0.1))
-                    .clipShape(Capsule())
-            }
             
             Button {
                 onDelete()
@@ -347,7 +415,6 @@ struct BucketRow: View {
                     .foregroundStyle(.red)
             }
             .buttonStyle(.plain)
-            .disabled(bucket.isMounted)
         }
         .padding(10)
         .background(Color.primary.opacity(0.03))

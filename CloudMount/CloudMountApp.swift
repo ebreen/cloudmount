@@ -1,4 +1,5 @@
 import SwiftUI
+import CloudMountKit
 
 @main
 struct CloudMountApp: App {
