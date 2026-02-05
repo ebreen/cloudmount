@@ -87,6 +87,39 @@ impl InodeTable {
         ROOT_INO
     }
 
+    /// Remove an inode and return its path
+    pub fn remove(&mut self, ino: u64) -> Option<String> {
+        if let Some(path) = self.ino_to_path.remove(&ino) {
+            self.path_to_ino.remove(&path);
+            Some(path)
+        } else {
+            None
+        }
+    }
+
+    /// Remove an inode by path and return its inode number
+    pub fn remove_by_path(&mut self, path: &str) -> Option<u64> {
+        let normalized = Self::normalize_path(path);
+        if let Some(ino) = self.path_to_ino.remove(&normalized) {
+            self.ino_to_path.remove(&ino);
+            Some(ino)
+        } else {
+            None
+        }
+    }
+
+    /// Rename an inode (update its path mapping)
+    pub fn rename(&mut self, ino: u64, new_path: &str) {
+        let normalized = Self::normalize_path(new_path);
+        // Remove old path mapping
+        if let Some(old_path) = self.ino_to_path.get(&ino) {
+            self.path_to_ino.remove(old_path);
+        }
+        // Insert new mapping
+        self.path_to_ino.insert(normalized.clone(), ino);
+        self.ino_to_path.insert(ino, normalized);
+    }
+
     /// Normalize a path for consistent lookup
     fn normalize_path(path: &str) -> String {
         let trimmed = path.trim_matches('/');

@@ -38,6 +38,18 @@ base64 = "0.22"
 # Libc for user/group IDs
 libc = "0.2"
 
+# File hashing for cache integrity
+sha1 = "0.10"
+
+# Temporary files for atomic writes
+tempfile = "3"
+
+# URL encoding for B2 file paths
+urlencoding = "2"
+
+# Platform-specific directories (cache, config, etc.)
+dirs = "5"
+
 [[bin]]
 name = "cloudmount-daemon"
 path = "src/main.rs"

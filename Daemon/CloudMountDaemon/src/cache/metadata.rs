@@ -35,11 +35,14 @@ pub struct CachedDir {
 /// Provides separate caches for:
 /// - File attributes (10 minute TTL)
 /// - Directory listings (5 minute TTL)
+/// - Negative lookups (60 second TTL) — prevents repeated B2 calls for missing files
 pub struct MetadataCache {
     /// Cache for file attributes by inode
     attr_cache: Cache<u64, CachedAttr>,
     /// Cache for directory listings by inode
     dir_cache: Cache<u64, CachedDir>,
+    /// Negative cache for paths known to not exist (reduces API calls)
+    negative_cache: Cache<String, ()>,
     /// Cache hit counter
     hits: AtomicU64,
     /// Cache miss counter
@@ -71,9 +74,15 @@ impl MetadataCache {
             .name("dir_listing_cache")
             .build();
 
+        let negative_cache = Cache::builder()
+            .time_to_live(Duration::from_secs(60))
+            .name("negative_lookup_cache")
+            .build();
+
         Self {
             attr_cache,
             dir_cache,
+            negative_cache,
             hits: AtomicU64::new(0),
             misses: AtomicU64::new(0),
         }
@@ -157,6 +166,28 @@ impl MetadataCache {
         );
     }
 
+    /// Check if a path is in the negative cache (known to not exist)
+    ///
+    /// Returns true if the path was recently looked up and not found.
+    pub fn is_negative_cached(&self, path: &str) -> bool {
+        self.negative_cache.get(path).is_some()
+    }
+
+    /// Insert a path into the negative cache
+    ///
+    /// Call this when a B2 lookup returns "not found" to prevent repeat lookups.
+    pub fn insert_negative(&self, path: &str) {
+        self.negative_cache.insert(path.to_string(), ());
+        trace!(path = path, "Added to negative cache");
+    }
+
+    /// Remove a path from the negative cache
+    ///
+    /// Call this when a file is created at a previously-missing path.
+    pub fn remove_negative(&self, path: &str) {
+        self.negative_cache.invalidate(path);
+    }
+
     /// Invalidate a specific inode's cached attributes
     ///
     /// Call this when file metadata changes.
@@ -172,6 +203,7 @@ impl MetadataCache {
     pub fn clear(&self) {
         self.attr_cache.invalidate_all();
         self.dir_cache.invalidate_all();
+        self.negative_cache.invalidate_all();
         self.hits.store(0, Ordering::Relaxed);
         self.misses.store(0, Ordering::Relaxed);
         debug!("Cleared all metadata caches");
