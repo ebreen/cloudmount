@@ -2,61 +2,48 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-02)
+See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Users can mount cloud storage buckets as local drives and access them seamlessly in Finder with a beautiful status bar interface for management.
-**Current focus:** All phases complete — MVP feature-complete
+**Current focus:** v1.0 milestone complete — planning next milestone
 
 ## Current Position
 
-Phase: 4 of 4 (Configuration & Polish)
-Plan: 2 of 2 in current phase
-Status: Phase complete
-Last activity: 2026-02-03 — Completed 04-02-PLAN.md
+Phase: All v1.0 phases complete (1-4)
+Plan: N/A
+Status: Milestone v1.0 shipped
+Last activity: 2026-02-05 — v1.0 milestone archived
 
-Progress: [██████████████] 100%
+Progress: [██████████████] 100% (v1.0)
 
 ## What's Complete
 
+### v1.0 MVP (Shipped 2026-02-05)
 - [x] Phase 1: Foundation (4/4 plans)
 - [x] Phase 2: Core Mount & Browse (4/4 plans)
 - [x] Phase 3: File I/O (4/4 plans)
 - [x] Phase 4: Configuration & Polish (2/2 plans)
 
+See: .planning/milestones/v1.0-ROADMAP.md for full details
+
 ## What's Left
 
-Nothing — all phases complete.
+Next milestone not yet planned. Run `/gsd-new-milestone` to start.
 
 ## Accumulated Context
 
 ### Decisions
 
-- **PIVOT: Tauri/React → Native Swift/SwiftUI** (mid-Phase 1)
-- Phase 2: Rust daemon for FUSE, Swift for UI, Unix socket IPC
-- Phase 2: Global B2 credentials (not per-bucket)
-- Phase 2: Window scene instead of Settings scene (fixes text field focus bug)
-- Phase 2: moka::sync::Cache for FUSE callback compatibility (not async)
-- Phase 3: Write locally, upload sync on close (MVP)
-- Phase 3: Suppress macOS metadata files in FUSE lookup
-- Phase 3: Permanent delete (ignore B2 versioning)
-- Phase 3: Rename via server-side copy + delete
-- Phase 3: B2Client uses Arc<RwLock<AuthState>> for token refresh
-- Phase 3: Retry wrapper with exponential backoff (500ms, 1s, 2s, 3 retries)
-- Phase 3: Directory rename returns ENOSYS (not supported for MVP)
-- Phase 4: totalBytesUsed sends None for MVP — B2 has no bucket size API, computation deferred
-- Phase 4: CodingKeys exclude isMounted and totalBytesUsed (runtime state, not persisted)
-- Phase 4: Disk usage shown inline with mountpoint using · separator (ByteCountFormatter)
-- Phase 4: Mount point validation prepends /Volumes/ for non-absolute paths
+Archived to PROJECT.md Key Decisions table. See .planning/milestones/v1.0-ROADMAP.md for full milestone decision log.
 
 ### Blockers/Concerns
 
-- **Pre-existing test failure**: `cache::metadata::tests::test_cache_clear` (moka cache timing) — not blocking, cosmetic
-- **API call budget**: Metadata suppression should reduce Class C calls significantly
+- Pre-existing test failure: `cache::metadata::tests::test_cache_clear` (moka cache timing) — cosmetic, not blocking
 
 ## Session Continuity
 
-Last session: 2026-02-03T14:44:09Z
-Stopped at: Completed 04-02-PLAN.md — all phases complete
+Last session: 2026-02-05
+Stopped at: v1.0 milestone archived
 Resume file: None
 
 ## Tech Stack

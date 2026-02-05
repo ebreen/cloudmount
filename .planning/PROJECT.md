@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A macOS menu bar app that mounts S3-compatible cloud storage (Backblaze B2, AWS S3, etc.) as local filesystems in Finder using FUSE. A free, open-source alternative to Mountain Duck with a modern, native-feeling macOS interface.
+A macOS menu bar app that mounts Backblaze B2 cloud storage buckets as local FUSE volumes in Finder. A free, open-source alternative to Mountain Duck with a native SwiftUI interface and a Rust FUSE daemon for file operations.
 
 ## Core Value
 
@@ -12,16 +12,16 @@ Users can mount cloud storage buckets as local drives and access them seamlessly
 
 ### Validated
 
-(None yet — ship to validate)
+- Mount B2 buckets as local drives in Finder — v1.0
+- Full file operations: read, write, list, delete — v1.0
+- Status bar menu with mount controls and disk usage — v1.0
+- Modern SwiftUI settings for credentials and configuration — v1.0
+- Secure Keychain credential storage — v1.0
+- macFUSE detection with installation guidance — v1.0
 
 ### Active
 
-- [ ] Mount S3-compatible buckets as local drives in Finder
-- [ ] Support Backblaze B2 as primary provider (S3-compatible API)
-- [ ] Basic file operations: read, write, list, delete
-- [ ] Status bar menu showing mounted buckets, status, and disk usage
-- [ ] Modern settings UI for credentials and configuration
-- [ ] Open source with documentation for GitHub release
+(None — next milestone will define new requirements via `/gsd-new-milestone`)
 
 ### Out of Scope
 
@@ -33,30 +33,43 @@ Users can mount cloud storage buckets as local drives and access them seamlessly
 
 ## Context
 
-Building a free alternative to Mountain Duck ($39) for developers and power users who need occasional cloud storage mounting. Target audience is technical macOS users comfortable with FUSE and S3 APIs.
+Shipped v1.0 MVP with ~6,042 LOC (1,333 Swift + 4,709 Rust).
 
-Key technical considerations:
-- Requires macFUSE to be installed by user (brew install --cask macfuse)
-- FUSE operations need to be non-blocking for good Finder UX
-- Metadata caching essential for performance
-- Status bar UI should feel native to macOS
+**Tech stack:**
+- Swift/SwiftUI: Menu bar app, settings window, credential management
+- Rust: FUSE daemon (fuser 0.16), B2 API client (reqwest), metadata cache (moka)
+- IPC: Unix domain socket with JSON protocol
+- Storage: macOS Keychain (credentials), JSON file (bucket configs)
+
+**Architecture:** Dual-process — Swift UI app communicates with Rust FUSE daemon via Unix socket at `/tmp/cloudmount.sock`. Daemon handles all B2 API calls and FUSE operations.
+
+**Known technical debt:**
+- Disk usage always shows None (B2 has no bucket size API)
+- Directory rename not supported (returns ENOSYS)
+- Auth token refresh is basic (24h expiry, simple re-auth)
+- Pre-existing test failure in moka cache timing test (cosmetic)
 
 ## Constraints
 
-- **Timeline**: Single day build — prioritize core functionality over polish
 - **Platform**: macOS 12+ only (Monterey or later)
-- **Tech Stack**: Node.js + TypeScript + fuse-native + Tauri (lighter than Electron)
+- **Tech Stack**: Swift/SwiftUI (UI) + Rust (FUSE daemon)
 - **Dependencies**: User must install macFUSE separately
-- **Provider Priority**: Backblaze B2 first, generic S3 second
+- **Provider Priority**: Backblaze B2 only (generic S3 planned for v2)
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Tauri over Electron | Lighter weight, better macOS native feel, Rust-based backend | — Pending |
-| Backblaze B2 first | Personal use case, simpler than full S3 feature set | — Pending |
-| Status bar only UI | No main window — menu bar app pattern for system tools | — Pending |
-| Open source release | Community contribution, no commercial licensing complexity | — Pending |
+| Tauri → Native Swift/SwiftUI | Tauri had text field focus bugs, SwiftUI gives better native UX | Good |
+| Rust daemon for FUSE | FUSE requires C-compatible callbacks, Rust is ideal | Good |
+| Unix socket IPC (JSON) | Human-readable debugging, fast local communication | Good |
+| Backblaze B2 first | Personal use case, simpler than full S3 feature set | Good |
+| Status bar only UI | Menu bar app pattern fits system tools | Good |
+| Write locally, upload on close | MVP simplicity, avoids partial uploads | Good |
+| moka::sync::Cache | FUSE callbacks are synchronous, can't use async cache | Good |
+| Suppress macOS metadata files | Reduces B2 API calls significantly | Good |
+| Permanent delete (ignore versioning) | MVP simplicity | Good |
+| Open source release | Community contribution, no licensing complexity | Pending |
 
 ---
-*Last updated: 2025-02-02 after initialization*
+*Last updated: 2026-02-05 after v1.0 milestone*
