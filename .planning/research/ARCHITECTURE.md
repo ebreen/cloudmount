@@ -1,432 +1,563 @@
-# Architecture Patterns: FUSE Cloud Storage Filesystem
+# Architecture Patterns: FSKit Migration
 
-**Domain:** FUSE-based cloud storage filesystem (CloudMount)
-**Researched:** February 2026
-**Overall Confidence:** HIGH
+**Domain:** macOS filesystem extension (FSKit) + cloud storage client
+**Researched:** 2026-02-05
+**Overall confidence:** MEDIUM — FSKit is new (macOS 15.4+), documentation is sparse, no official Apple sample code exists. Findings are synthesized from Apple Developer Forums (Apple DTS engineers), KhaosT/FSKitSample (community), and Apple open-source msdos FS reimplementation. FSKit API is still evolving and has known limitations.
+
+## Critical Context: FSKit's Current State
+
+**FSKit only supports `FSUnaryFileSystem` today.** Per Apple DTS Engineer (Quinn "The Eskimo!") in the Apple Developer Forums (March 2025):
+
+> "[FSUnaryFileSystem] works with one FSResource and presents it as one FSVolume. This is intended to support traditional file systems, that is, ones that present a volume that's mounted on a disk (or a partition of a disk). Think FAT, HFS, and so on."
+
+**Network file systems are NOT natively supported by FSKit.** When asked about network FS support, the same Apple DTS engineer stated:
+
+> "Network file systems don't mount on /dev nodes and thus aren't supported by FSKit... I can assure you that the FSKit team is well aware of the demand for this particular feature."
+
+**CloudMount is a cloud/network filesystem.** This means we CANNOT use the standard FSKit block-device-backed workflow. However, there IS a workaround: FSKit supports `FSPathURLResource` and `FSGenericURLResource` resource types, which allow mounting filesystems backed by URLs or paths rather than block devices. The mount command with `-F` flag works with these resource types. A community developer successfully shipped a virtual FS using `FSPathURLResource` (mcrawfs project).
+
+**Confidence: MEDIUM** — The path-URL resource approach works per forum reports, but it's less documented than block device support and has known sandbox/mount API issues.
+
+---
 
 ## Recommended Architecture
 
-CloudMount follows a layered architecture with clear separation between the UI, filesystem bridge, and cloud storage integration layers. The architecture is designed around Tauri's IPC model, where the Rust backend serves as the orchestration layer coordinating between the web frontend and the Node.js FUSE filesystem process.
-
-### High-Level Architecture
+### Overview: From Dual-Process to App + Extension
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         macOS User                               │
-├─────────────────────────────────────────────────────────────────┤
-│  Finder        │  Status Bar Menu  │  Settings Window          │
-│  (Native)      │  (Tauri Tray)     │  (Tauri WebView)          │
-└───────┬────────┴─────────┬─────────┴────────────┬────────────────┘
-        │                  │                      │
-        │ FUSE Operations  │  IPC Events          │  IPC Commands
-        │                  │                      │
-┌───────▼──────────────────▼──────────────────────▼────────────────┐
-│                    Tauri Application (Rust)                      │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐   │
-│  │ Mount Manager│  │ Config Store │  │ S3 Bridge (Node.js)  │   │
-│  │ - Lifecycle  │  │ - Credentials│  │ - FUSE Handlers      │   │
-│  │ - Health     │  │ - Settings   │  │ - S3 Operations      │   │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-        │                                        │
-        │ macFUSE Kernel Extension               │ AWS SDK
-        │                                        │
-┌───────▼────────────────────────────────────────▼────────────────┐
-│                    Cloud Storage (S3/B2)                         │
-│                    ┌──────────────┐                              │
-│                    │ Buckets      │                              │
-│                    │ Objects      │                              │
-│                    │ Metadata     │                              │
-│                    └──────────────┘                              │
-└─────────────────────────────────────────────────────────────────┘
+CURRENT (v1.0):
+┌──────────────────┐     Unix Socket      ┌──────────────────────────┐
+│  Swift UI App    │ ──── JSON IPC ─────► │  Rust FUSE Daemon        │
+│  (menu bar)      │                       │  ├─ B2 API Client       │
+│  ├─ AppState     │                       │  ├─ FUSE fs (fuser)     │
+│  ├─ DaemonClient │                       │  ├─ Metadata Cache      │
+│  └─ CredStore    │                       │  └─ Mount Manager       │
+└──────────────────┘                       └──────────────────────────┘
+
+NEW (v2.0):
+┌──────────────────┐       ExtensionKit       ┌──────────────────────────┐
+│  Swift UI App    │ ──── (automatic IPC) ──► │  FSKit Extension (.appex)│
+│  (menu bar)      │                           │  ├─ FSUnaryFileSystem    │
+│  ├─ AppState     │  ◄─── NSXPCConnection ── │  ├─ FSVolume subclass    │
+│  ├─ MountClient  │       (custom comms)      │  ├─ B2Client (Swift)    │
+│  ├─ CredStore    │                           │  ├─ Metadata Cache      │
+│  └─ UI Views     │                           │  └─ FSItem tree         │
+└──────────────────┘                           └──────────────────────────┘
 ```
 
-### Component Boundaries
+### Key Architecture Decision: App Extension, Not System Extension
 
-| Component | Responsibility | Communicates With | Technology |
-|-----------|---------------|-------------------|------------|
-| **Menu Bar UI** | Display mount status, trigger actions | Tauri Backend | Tauri Tray API + WebView |
-| **Settings UI** | Configure credentials, buckets, preferences | Tauri Backend | Tauri WebView (React/Vue) |
-| **Tauri Backend (Rust)** | Orchestration, IPC, native integration | All components | Tauri Framework |
-| **Mount Manager** | Mount/unmount lifecycle, health checks | FUSE Process, UI | Rust (Tauri Command) |
-| **Config Store** | Secure credential storage, settings | Tauri Backend | macOS Keychain |
-| **FUSE Bridge (Node.js)** | FUSE syscall implementation | macFUSE, S3 SDK | fuse-native + AWS SDK |
-| **S3 Client** | Cloud storage operations | FUSE Bridge | AWS SDK v3 |
-| **Cache Layer** | Metadata caching, write buffering | FUSE Bridge | In-memory + optional disk |
+FSKit modules are **App Extensions** (`.appex`) using modern ExtensionFoundation/ExtensionKit technology, NOT System Extensions. This is confirmed by Apple DTS:
 
-## Data Flow
+> "Your module's main entry point must be in Swift [due to the fact that FSKit is based on modern appex technology, that is, ExtensionFoundation / ExtensionKit]."
 
-### Read Operation Flow
+**Implications:**
+- The FSKit module is an **Xcode target** embedded within the main `.app` bundle
+- It runs as a **separate process** managed by the system (not your app)
+- The system launches it on demand when mounting is requested
+- Users must enable it in **System Settings → General → Login Items & Extensions → File System Extensions**
+- It is sandboxed by default
+
+**Confidence: HIGH** — Directly confirmed by Apple DTS engineer and FSKitSample project structure.
+
+---
+
+## Component Architecture
+
+### Component 1: Main App (existing, modified)
+
+**Responsibility:** UI, credential management, mount orchestration
+**What changes:** DaemonClient becomes MountClient, MacFUSEDetector removed, mount/unmount logic changes
+
+| File | Status | Change |
+|------|--------|--------|
+| `CloudMountApp.swift` | **Modified** | Remove MacFUSEDetector refs, update AppState |
+| `AppState` (in CloudMountApp.swift) | **Modified** | Replace daemon polling with mount status checks, remove `macFUSEInstalled`, `isDaemonRunning` |
+| `DaemonClient.swift` | **Replaced** | New `MountClient.swift` — invokes `/sbin/mount -F` to mount, `umount` to unmount |
+| `CredentialStore.swift` | **Kept as-is** | Keychain storage works unchanged; extension reads via App Group |
+| `MacFUSEDetector.swift` | **Deleted** | No longer needed |
+| `MenuContentView.swift` | **Modified** | Remove macFUSE warning section, update status indicators |
+| `SettingsView.swift` | **Modified** | Remove daemon-related error messaging, B2 bucket listing moves to Swift |
+| `Package.swift` | **Replaced** | Must migrate to Xcode project (see Build System section) |
+
+### Component 2: FSKit Extension (NEW — `.appex` target)
+
+**Responsibility:** Filesystem operations, B2 API communication, caching
+**Entry point:** Swift `@main` struct conforming to `UnaryFilesystemExtension`
+
+| File | Status | Purpose |
+|------|--------|---------|
+| `CloudMountFSExtension.swift` | **New** | `@main` entry point, `UnaryFilesystemExtension` conformance |
+| `CloudMountFS.swift` | **New** | `FSUnaryFileSystem` subclass, `FSUnaryFileSystemOperations` — probe, load, unload |
+| `CloudMountVolume.swift` | **New** | `FSVolume` subclass, `FSVolume.Operations` — activate, deactivate, mount, unmount, directory enumeration, file operations |
+| `CloudMountItem.swift` | **New** | `FSItem` subclass — represents files/directories, holds B2 metadata |
+| `B2Client.swift` | **New** | B2 API client (URLSession + async/await), ported from Rust |
+| `B2Types.swift` | **New** | B2 API response/request types |
+| `MetadataCache.swift` | **New** | In-memory metadata cache (replaces Rust moka) |
+| `FileDataCache.swift` | **New** | Read cache + write staging (replaces Rust local file cache) |
+| `Info.plist` | **New** | FSKit extension configuration (FSName, FSShortName, resource types) |
+| `Entitlements` | **New** | Sandbox entitlements, App Group for Keychain sharing |
+
+### Component 3: Shared Code (NEW — shared Swift package/framework)
+
+**Responsibility:** Types and utilities shared between app and extension
+
+| File | Status | Purpose |
+|------|--------|---------|
+| `BucketConfig.swift` | **Extracted** | Bucket configuration model (from CloudMountApp.swift) |
+| `CredentialStore.swift` | **Shared** | Keychain access (needs App Group for cross-process access) |
+| `SharedTypes.swift` | **New** | Mount status types, error types |
+
+---
+
+## Data Flow: How Does UI Talk to Filesystem?
+
+### Current Flow (v1.0)
+```
+User clicks "Mount" → AppState.mountBucket() → DaemonClient.mount()
+  → Unix socket write → Rust daemon reads JSON
+  → Daemon calls FUSE mount → macFUSE kernel module mounts volume
+  → Daemon sends JSON response → DaemonClient reads response → UI updates
+```
+
+### New Flow (v2.0)
+
+**Mount flow:**
+```
+User clicks "Mount" → AppState.mountBucket() → MountClient.mount()
+  → Process.run("/sbin/mount", ["-F", "-t", "CloudMountFS", resource, mountpoint])
+  → System launches FSKit extension (.appex) process
+  → Extension's probeResource() called → returns .usable
+  → Extension's loadResource() called → returns CloudMountVolume instance
+  → Volume.activate() called → B2Client authenticates, returns root FSItem
+  → macOS mounts volume at mountpoint → Finder sees volume
+  → MountClient detects mount success (via mount exit code or DiskArbitration callback)
+  → UI updates
+```
+
+**File read flow:**
+```
+Finder opens file → VFS → FSKit kernel bridge
+  → CloudMountVolume.lookupItem(named:inDirectory:) — find FSItem
+  → CloudMountVolume.read(from:at:length:into:) called
+  → Check FileDataCache → cache miss → B2Client.downloadFile()
+  → URLSession async download → write to FSMutableFileDataBuffer
+  → Return bytes to VFS → Finder displays file
+```
+
+**Status polling replacement:**
+```
+CURRENT: Timer polls daemon every 2s via Unix socket
+NEW: Use DiskArbitration framework to observe mount/unmount events
+  — OR — check mount table (/sbin/mount output) periodically
+  — OR — use FSKit's containerStatus property
+```
+
+### IPC Between App and Extension
+
+The Unix socket IPC is **completely eliminated**. FSKit extensions are managed by the system — the app doesn't directly communicate with the extension process.
+
+**What replaces it:**
+
+| Communication Need | v1.0 Solution | v2.0 Solution |
+|-------------------|---------------|---------------|
+| Mount request | Unix socket JSON "mount" command | `/sbin/mount -F` command |
+| Unmount request | Unix socket JSON "unmount" command | `umount` command or `DiskArbitration` |
+| Mount status | Unix socket JSON "getStatus" poll | DiskArbitration callbacks or mount table |
+| Credentials | Sent in mount JSON command | Shared Keychain via App Group |
+| B2 bucket listing | Unix socket JSON "listBuckets" command | Direct B2Client in main app (new) |
+| Error reporting | Daemon returns errors in JSON | os_log from extension + app-side error detection |
+
+**Critical change:** The main app needs its OWN B2 API client for operations like listing buckets during credential setup. The extension has its own B2 client for filesystem operations. They share credentials via Keychain App Group.
+
+**Confidence: MEDIUM** — Mount via `/sbin/mount` is confirmed by Apple DTS as the standard approach. App-to-extension communication via shared Keychain is standard App Group pattern. The exact mechanism for passing credentials to the extension at mount time needs further investigation (possibly via mount options or FSTaskOptions).
+
+---
+
+## Build System: Xcode Project Required
+
+### SPM Cannot Build FSKit Extensions
+
+**The current `Package.swift` must be replaced with an Xcode project.** FSKit extensions require:
+
+1. **App Extension target** — SPM doesn't support `.appex` extension targets
+2. **Info.plist configuration** — FSKit requires specific plist keys (`FSName`, `FSShortName`, `FSSupportsBlockResources`, `FSActivateOptionSyntax`)
+3. **Entitlements** — Sandbox entitlements, App Group, FSKit Module capability
+4. **Embedding** — The `.appex` must be embedded in the `.app` bundle's `Contents/Extensions/` directory
+5. **Code signing** — Both app and extension need signing
+
+**Confidence: HIGH** — The Xcode File System Extension template (added in Xcode 16.3) generates the proper project structure. Both FSKitSample and the Apple msdos implementation use Xcode projects. Apple DTS explicitly directs developers to use this template.
+
+### Recommended Project Structure
 
 ```
-1. User opens file in Finder
-   │
-   ▼
-2. macFUSE kernel extension receives VFS call
-   │
-   ▼
-3. fuse-native dispatches to Node.js handler
-   │
-   ▼
-4. FUSE Bridge checks local cache
-   │ (cache hit: return immediately)
-   │ (cache miss: continue)
-   ▼
-5. S3 Client issues GetObject request
-   │
-   ▼
-6. Stream response back through FUSE → Kernel → Finder
+CloudMount.xcodeproj
+├── CloudMount/                        (Main app target)
+│   ├── CloudMountApp.swift
+│   ├── AppState.swift
+│   ├── MountClient.swift              (replaces DaemonClient)
+│   ├── B2Client.swift                 (app-side, for bucket listing)
+│   ├── CredentialStore.swift
+│   ├── MenuContentView.swift
+│   ├── SettingsView.swift
+│   ├── Info.plist
+│   └── CloudMount.entitlements
+│
+├── CloudMountFS/                      (FSKit extension target - .appex)
+│   ├── CloudMountFSExtension.swift    (@main entry, UnaryFilesystemExtension)
+│   ├── CloudMountFS.swift             (FSUnaryFileSystem subclass)
+│   ├── CloudMountVolume.swift         (FSVolume subclass + Operations)
+│   ├── CloudMountItem.swift           (FSItem subclass)
+│   ├── B2Client.swift                 (extension-side, for file I/O)
+│   ├── B2Types.swift
+│   ├── MetadataCache.swift
+│   ├── FileDataCache.swift
+│   ├── Info.plist                     (FSKit keys)
+│   └── CloudMountFS.entitlements
+│
+├── Shared/                            (Shared framework or files)
+│   ├── BucketConfig.swift
+│   ├── CredentialStore.swift          (shared Keychain access)
+│   └── SharedTypes.swift
+│
+└── Tests/
+    ├── B2ClientTests/
+    └── CacheTests/
 ```
 
-### Write Operation Flow
+### Info.plist for FSKit Extension
 
-```
-1. User saves file in Finder
-   │
-   ▼
-2. FUSE Bridge receives write() calls (buffered)
-   │
-   ▼
-3. On fsync() or close(), upload to S3
-   │
-   ▼
-4. S3 Client uses multipart upload for large files
-   │
-   ▼
-5. Update local metadata cache
-   │
-   ▼
-6. Confirm completion to Finder
+Based on the Xcode 16.3 template and FSKitSample:
+
+```xml
+<key>FSName</key>
+<string>CloudMountFS</string>
+<key>FSShortName</key>
+<string>CloudMountFS</string>
+<key>FSSupportsBlockResources</key>
+<false/>                          <!-- We're NOT block-device based -->
+<key>FSActivateOptionSyntax</key>
+<dict>
+    <key>shortOptions</key>
+    <string>b:k:m:</string>       <!-- bucket, keyId, mountpoint options -->
+    <key>pathOptions</key>
+    <dict/>
+</dict>
+<key>EXExtensionPointIdentifier</key>
+<string>com.apple.fskit.module</string>
 ```
 
-### UI → Backend Communication
+**Confidence: MEDIUM** — FSSupportsBlockResources=false is correct for our use case but less tested. The option syntax for passing credentials needs experimentation.
 
-```
-Frontend (TypeScript)          Backend (Rust)
-─────────────────────────────────────────────────
-invoke('mount_bucket', {       → Command handler
-  bucket: 'my-bucket',            validates input
-  mountPoint: '/Volumes/X'        spawns FUSE process
-})                             ← Returns mount handle
+---
 
-listen('mount_status', (e) =>  ← Event from backend
-  console.log(e.payload)          FUSE process status
-)                                  health updates
+## Extension Architecture Detail
+
+### Entry Point Pattern
+
+```swift
+import FSKit
+
+@main
+struct CloudMountFSExtension: UnaryFilesystemExtension {
+    // System instantiates this. Must return your FSUnaryFileSystem subclass.
+    func createFileSystem() -> FSUnaryFileSystem {
+        return CloudMountFS()
+    }
+}
 ```
+
+### FSUnaryFileSystem Subclass
+
+```swift
+final class CloudMountFS: FSUnaryFileSystem, FSUnaryFileSystemOperations {
+    func probeResource(resource: FSResource, replyHandler: @escaping (FSProbeResult?, Error?) -> Void) {
+        // Called by system to check if we can mount this resource
+        // For CloudMount: always return .usable since we're a virtual FS
+        replyHandler(.usable(name: "B2Bucket", containerID: FSContainerIdentifier(uuid: ...)), nil)
+    }
+
+    func loadResource(resource: FSResource, options: FSTaskOptions, replyHandler: @escaping (FSVolume?, Error?) -> Void) {
+        // Extract B2 credentials from mount options or shared Keychain
+        // Create and return volume
+        let volume = CloudMountVolume(bucketName: ..., credentials: ...)
+        replyHandler(volume, nil)
+    }
+
+    func unloadResource(resource: FSResource, options: FSTaskOptions, replyHandler: @escaping (Error?) -> Void) {
+        replyHandler(nil)
+    }
+}
+```
+
+### FSVolume Subclass (Core Operations)
+
+The volume must conform to these protocols:
+
+| Protocol | Purpose | Priority |
+|----------|---------|----------|
+| `FSVolume.Operations` | Core: activate, deactivate, lookup, enumerate, create, remove, rename | **Required** |
+| `FSVolume.ReadWriteOperations` | File read/write | **Required** |
+| `FSVolume.OpenCloseOperations` | File open/close lifecycle | **Required** |
+| `FSVolume.PathConfOperations` | Path configuration (max name length, etc.) | Required |
+| `FSVolume.XattrOperations` | Extended attributes | Nice-to-have |
+| `FSVolume.RenameOperations` | Rename operations | Nice-to-have |
+
+**Key operations to implement (mapped from Rust FUSE):**
+
+| Rust FUSE (fuser trait) | FSKit Volume Protocol | Notes |
+|------------------------|----------------------|-------|
+| `lookup` | `lookupItem(named:inDirectory:)` | Returns `(FSItem, FSFileName)` |
+| `readdir` | `enumerateDirectory(...)` | Uses `FSDirectoryEntryPacker` |
+| `read` | `read(from:at:length:into:)` | Writes to `FSMutableFileDataBuffer` |
+| `write` | `write(contents:to:at:)` | Returns bytes written |
+| `create` | `createItem(named:type:inDirectory:attributes:)` | Returns `(FSItem, FSFileName)` |
+| `mkdir` | Same as create with `.directory` type | — |
+| `unlink`/`rmdir` | `removeItem(_:named:fromDirectory:)` | — |
+| `rename` | `renameItem(...)` | — |
+| `getattr` | `attributes(_:of:)` | Returns `FSItem.Attributes` |
+| `setattr` | `setAttributes(_:on:)` | Returns updated attributes |
+| `open` | `openItem(_:modes:)` | — |
+| `release` | `closeItem(_:modes:)` | — |
+| `forget` | `reclaimItem(_:)` | FSKit equivalent of FUSE forget |
+| `statfs` | `volumeStatistics` property | Returns `FSStatFSResult` |
+
+**Confidence: HIGH** — FSVolume protocol conformance is well-documented in FSKitSample and Apple headers.
+
+---
+
+## Credential Sharing Strategy
+
+### Problem
+The main app stores B2 credentials in Keychain. The FSKit extension (separate process) needs those credentials to authenticate with B2.
+
+### Solution: App Group + Keychain Sharing
+
+1. Both app and extension join the same App Group (e.g., `group.com.cloudmount`)
+2. CredentialStore uses `kSecAttrAccessGroup` to store in the shared Keychain group
+3. Extension reads credentials from shared Keychain at mount time
+
+**Impact on CredentialStore.swift:**
+```swift
+// Current (single-app)
+private let keychain = Keychain(service: "com.cloudmount.credentials")
+    .accessibility(.whenUnlocked)
+
+// New (shared via App Group)
+private let keychain = Keychain(service: "com.cloudmount.credentials")
+    .accessibility(.whenUnlocked)
+    .accessGroup("group.com.cloudmount")  // <-- shared access group
+```
+
+**Alternative:** Pass credentials via mount command options. The `FSTaskOptions` can carry key-value pairs, but this is less secure (credentials visible in process listing). Shared Keychain is the recommended approach.
+
+**Confidence: MEDIUM** — App Group Keychain sharing is a well-established iOS/macOS pattern, but KeychainAccess library support with App Groups needs verification. May need to switch to raw Security framework calls.
+
+---
+
+## Known Limitations and Workarounds
+
+### 1. No Native Network FS Support
+
+**Problem:** FSKit's `FSUnaryFileSystem` is designed for block-device-backed filesystems.
+**Workaround:** Use `FSGenericURLResource` or `FSPathURLResource` as the resource type. Mount with `mount -F -t CloudMountFS <resource-specifier> <mountpoint>`. The resource specifier can be a dummy value since our FS is entirely virtual (backed by B2 API, not local storage).
+
+**Confidence: MEDIUM** — Community projects have made this work but it's not the primary FSKit use case.
+
+### 2. Volumes Don't Auto-Appear in Finder Sidebar
+
+**Problem:** FSKit-mounted volumes at custom mount points (not `/Volumes/`) don't appear in Finder's sidebar.
+**Workaround:** Mount to `/tmp/` or another writable location, OR use DiskArbitration to properly announce the volume. This is a known pain point per Apple Developer Forums.
+
+**Note:** `/Volumes/` is protected on modern macOS. You may need to create the mount point directory in `/tmp/` or use another writable path.
+
+**Confidence: LOW** — This is an active area of FSKit development. Finder integration may improve in future macOS versions.
+
+### 3. Performance Overhead
+
+**Problem:** FSKit's `FSVolumeReadWriteOperations` path has higher overhead than FUSE. One developer reported 100-150% CPU vs 40% with macFUSE for the same operations. Apple DTS acknowledged: "We haven't done much to optimize the FSVolumeReadWriteOperations path."
+
+**Workaround:** Aggressive caching, batch prefetching, minimize round-trips to B2 API.
+
+**Confidence: HIGH** — Directly stated by Apple DTS engineer (Sep 2025).
+
+### 4. No Kernel-Level Caching
+
+**Problem:** FSKit lacks FUSE's entry_timeout, attr_timeout, and readdir caching. Every operation goes through userspace. A developer measured 121μs average per getdirentries syscall even with hardcoded data.
+
+**Workaround:** Implement aggressive application-level caching in the extension. Cache directory listings, file metadata, and file contents with configurable TTLs.
+
+**Confidence: HIGH** — Confirmed by developer benchmarks and Apple acknowledgment that kernel caching is not yet available.
+
+### 5. Read-Only Mode Not Fully Supported
+
+**Problem:** Even with FSKit, marking a volume as read-only doesn't fully propagate to Finder — users may see options to trash items even though operations fail.
+
+**Workaround:** Not critical for CloudMount (we support read-write), but worth noting if read-only B2 buckets are supported later.
+
+**Confidence: MEDIUM** — Reported by multiple developers.
+
+### 6. Extension Must Be Manually Enabled
+
+**Problem:** Users must go to System Settings → General → Login Items & Extensions → File System Extensions and enable the extension before first mount.
+
+**Workaround:** Detect when extension is not enabled and guide user through the process in the UI. Consider first-run onboarding flow.
+
+**Confidence: HIGH** — Confirmed by Apple DTS, demonstrated in FSKitSample.
+
+### 7. Sandbox Restrictions
+
+**Problem:** FSKit extensions are sandboxed. Accessing files outside the sandbox requires security-scoped bookmarks or mount options.
+
+**Workaround:** Since CloudMount's extension only talks to B2 API (network access), sandbox restrictions on local file access are less of a concern. Network access needs `com.apple.security.network.client` entitlement.
+
+**Confidence: MEDIUM** — Network-only extensions should be simpler than local-file-backed ones, but this needs testing.
+
+---
+
+## Migration Path: Suggested Build Order
+
+### Phase 1: Build System Migration
+1. Create Xcode project with File System Extension template
+2. Move existing Swift sources into main app target
+3. Verify existing UI builds and runs (without daemon)
+4. Set up App Group for Keychain sharing
+
+### Phase 2: FSKit Extension Skeleton
+1. Create extension target using Xcode template
+2. Implement `UnaryFilesystemExtension` entry point
+3. Implement `FSUnaryFileSystem` with hardcoded probe/load
+4. Implement `FSVolume` with in-memory filesystem (no B2)
+5. Test: mount, list root directory, unmount
+
+### Phase 3: B2 Client in Swift
+1. Port B2 authorize/authenticate from Rust to Swift/URLSession
+2. Port B2 file listing (b2_list_file_names)
+3. Port B2 file download (b2_download_file_by_name)
+4. Port B2 file upload (b2_upload_file)
+5. Port B2 file delete (b2_delete_file_version)
+6. Add B2 client to both app (for bucket listing) and extension (for file I/O)
+
+### Phase 4: Wire B2 to FSKit
+1. Connect `CloudMountVolume.lookupItem` → B2 listing
+2. Connect `CloudMountVolume.enumerateDirectory` → B2 listing
+3. Connect `CloudMountVolume.read` → B2 download
+4. Add metadata cache (Swift actor, replaces Rust moka)
+5. Add file data cache (local temp files, replaces Rust file cache)
+6. Connect `CloudMountVolume.write` → B2 upload on close
+7. Connect `CloudMountVolume.removeItem` → B2 delete
+
+### Phase 5: App Integration
+1. Replace `DaemonClient` with `MountClient` (invokes mount/umount)
+2. Update `AppState` — remove daemon polling, add mount detection
+3. Add B2Client to main app for bucket listing
+4. Update UI — remove macFUSE references, update status indicators
+5. Wire Keychain sharing via App Group
+6. Add first-run extension enablement guidance
+
+### Phase 6: Polish and Distribution
+1. Code signing and notarization
+2. DMG packaging
+3. Homebrew Cask formula
+4. GitHub Actions CI/CD
+
+---
 
 ## Patterns to Follow
 
-### Pattern 1: FUSE Filesystem Trait Implementation
+### Pattern 1: Actor-Based B2 Client
+**What:** Use Swift actor for the B2 API client to ensure thread safety
+**Why:** FSKit can call volume operations concurrently. The B2 client must handle concurrent requests safely.
+```swift
+actor B2Client {
+    private var authToken: String?
+    private var apiUrl: String?
 
-Implement the core FUSE operations using `fuse-native` handlers. This is the standard pattern used by gcsfuse, s3fs-fuse, and goofys.
-
-**What:** Implement handlers for `getattr`, `readdir`, `open`, `read`, `write`, `release`
-**When:** All FUSE filesystem operations
-**Example:**
-```typescript
-// src/fuse/handlers.ts
-const handlers = {
-  getattr: async (path: string, cb: Function) => {
-    const attr = await metadataCache.get(path);
-    if (attr) return cb(0, attr);
-    
-    // Fetch from S3 if not cached
-    const head = await s3Client.headObject({ Bucket, Key: path });
-    const stat = convertS3ToStat(head);
-    metadataCache.set(path, stat);
-    cb(0, stat);
-  },
-  
-  readdir: async (path: string, cb: Function) => {
-    const objects = await s3Client.listObjectsV2({
-      Bucket,
-      Prefix: path,
-      Delimiter: '/'
-    });
-    const entries = objects.Contents?.map(o => parseKey(o.Key)) || [];
-    cb(0, entries);
-  },
-  
-  read: async (path: string, fd: number, buf: Buffer, 
-               len: number, pos: number, cb: Function) => {
-    const range = `bytes=${pos}-${pos + len - 1}`;
-    const response = await s3Client.getObject({
-      Bucket, Key: path, Range: range
-    });
-    const data = await response.Body?.transformToByteArray();
-    if (data) {
-      buf.set(data);
-      cb(data.length);
-    }
-  }
-};
-```
-
-### Pattern 2: Metadata Caching with TTL
-
-Cache directory listings and file attributes to reduce S3 API calls. This is critical for performance as directory operations in S3 are expensive.
-
-**What:** In-memory cache with configurable TTL for metadata
-**When:** All metadata operations (getattr, readdir)
-**Implementation:**
-```typescript
-// src/cache/metadata.ts
-class MetadataCache {
-  private cache = new Map<string, CacheEntry>();
-  private ttlMs: number;
-  
-  get(path: string): Stat | null {
-    const entry = this.cache.get(path);
-    if (!entry) return null;
-    if (Date.now() - entry.timestamp > this.ttlMs) {
-      this.cache.delete(path);
-      return null;
-    }
-    return entry.data;
-  }
-  
-  set(path: string, data: Stat): void {
-    this.cache.set(path, { data, timestamp: Date.now() });
-  }
-  
-  invalidate(path: string): void {
-    // Invalidate path and all children
-    for (const key of this.cache.keys()) {
-      if (key.startsWith(path)) this.cache.delete(key);
-    }
-  }
+    func authorize(keyId: String, applicationKey: String) async throws { ... }
+    func listFileNames(bucketId: String, prefix: String?) async throws -> [B2File] { ... }
+    func downloadFile(bucketName: String, fileName: String) async throws -> Data { ... }
 }
 ```
 
-### Pattern 3: Streaming Read/Write
-
-Use streaming for file operations to handle large files without loading entirely into memory.
-
-**What:** Stream data between FUSE and S3
-**When:** File read/write operations
-**Implementation:**
-```typescript
-// src/fuse/operations.ts
-async function readFile(
-  path: string, 
-  buffer: Buffer, 
-  offset: number, 
-  length: number
-): Promise<number> {
-  // Use range requests for partial reads
-  const range = `bytes=${offset}-${offset + length - 1}`;
-  const response = await s3.send(new GetObjectCommand({
-    Bucket: config.bucket,
-    Key: path,
-    Range: range
-  }));
-  
-  // Transform stream to buffer
-  const bytes = await response.Body!.transformToByteArray();
-  buffer.set(bytes);
-  return bytes.length;
-}
-
-async function writeFile(
-  path: string,
-  buffer: Buffer,
-  offset: number
-): Promise<void> {
-  // Buffer writes locally, upload on close/fsync
-  const tempPath = getTempPath(path);
-  await fs.write(tempPath, buffer, 0, buffer.length, offset);
+### Pattern 2: FSItem Subclass with B2 Metadata
+**What:** Custom FSItem subclass that holds B2-specific metadata
+**Why:** FSKit manages FSItem lifecycle but you need to attach your domain data
+```swift
+final class CloudMountItem: FSItem {
+    let b2FileId: String?
+    let b2FileName: String
+    var cachedAttributes: FSItem.Attributes
+    var children: [FSFileName: CloudMountItem]  // for directories
 }
 ```
 
-### Pattern 4: Tauri IPC Bridge
+### Pattern 3: Write-on-Close Semantics
+**What:** Buffer writes in a local temp file, upload to B2 when file is closed
+**Why:** B2 requires knowing file size upfront; partial writes aren't supported. This matches v1.0 behavior.
 
-Use Tauri's command/event system for UI-backend communication.
-
-**What:** Commands for actions, events for status updates
-**When:** All UI-backend communication
-**Implementation:**
-```rust
-// src-tauri/src/commands.rs
-#[tauri::command]
-async fn mount_bucket(
-    bucket: String,
-    mount_point: String,
-    state: State<'_, MountManager>,
-) -> Result<MountHandle, String> {
-    let handle = state.mount(bucket, mount_point).await?;
-    Ok(handle)
-}
-
-#[tauri::command]
-async fn unmount_bucket(
-    handle: MountHandle,
-    state: State<'_, MountManager>,
-) -> Result<(), String> {
-    state.unmount(handle).await?;
-    Ok(())
-}
-```
-
-```typescript
-// src/App.tsx
-import { invoke, listen } from '@tauri-apps/api';
-
-async function mount() {
-  const handle = await invoke('mount_bucket', {
-    bucket: 'my-bucket',
-    mountPoint: '/Volumes/MyBucket'
-  });
-  
-  const unlisten = await listen('mount_status', (event) => {
-    updateUI(event.payload);
-  });
-}
-```
-
-### Pattern 5: Credential Security
-
-Store credentials securely using macOS Keychain via Tauri APIs.
-
-**What:** Keychain-backed credential storage
-**When:** Storing S3 credentials
-**Implementation:**
-```rust
-// src-tauri/src/credentials.rs
-use keychain::{Entry, Error};
-
-pub struct CredentialStore;
-
-impl CredentialStore {
-    pub fn save(bucket: &str, access_key: &str, secret_key: &str) -> Result<(), Error> {
-        let entry = Entry::new("cloudmount", bucket)?;
-        entry.set_password(&format!("{}:{}", access_key, secret_key))?;
-        Ok(())
-    }
-    
-    pub fn get(bucket: &str) -> Result<(String, String), Error> {
-        let entry = Entry::new("cloudmount", bucket)?;
-        let creds = entry.get_password()?;
-        let parts: Vec<&str> = creds.split(':').collect();
-        Ok((parts[0].to_string(), parts[1].to_string()))
-    }
-}
-```
+---
 
 ## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Synchronous S3 Operations in FUSE Handlers
+### Anti-Pattern 1: Direct Extension Communication
+**What:** Trying to establish direct XPC/socket communication between app and extension
+**Why bad:** FSKit extensions are system-managed processes. You don't control their lifecycle. Use shared state (Keychain, App Group UserDefaults) instead.
 
-**What:** Blocking on S3 API calls within FUSE handlers
-**Why bad:** Blocks the entire FUSE event loop, freezing Finder
-**Instead:** Use async/await with proper callback handling
+### Anti-Pattern 2: Blocking in FSVolume Operations
+**What:** Making synchronous B2 API calls in volume operation callbacks
+**Why bad:** FSKit operations are `async` — use Swift concurrency properly. Don't block threads.
 
-```typescript
-// BAD - blocks FUSE
-read: (path, fd, buf, len, pos, cb) => {
-  const data = s3.getObjectSync({ Key: path }); // DON'T
-  cb(data.length);
-}
+### Anti-Pattern 3: Storing Extension State in Memory Only
+**What:** Keeping all mount state only in the extension process
+**Why bad:** The extension process can be killed at any time by the system. Persist important state via App Group.
 
-// GOOD - async
-read: async (path, fd, buf, len, pos, cb) => {
-  const data = await s3.getObject({ Key: path });
-  cb(data.length);
-}
-```
+### Anti-Pattern 4: Using SPM for the Build
+**What:** Trying to keep Package.swift and avoid Xcode project
+**Why bad:** FSKit extensions require Xcode project features (extension targets, Info.plist, entitlements, embedding). SPM doesn't support this.
 
-### Anti-Pattern 2: No Metadata Caching
-
-**What:** Fetching file attributes from S3 on every `getattr` call
-**Why bad:** Finder calls `getattr` frequently; each is an S3 API call = slow + expensive
-**Instead:** Implement TTL-based metadata cache
-
-### Anti-Pattern 3: Full File Buffering
-
-**What:** Loading entire files into memory for read/write
-**Why bad:** Memory exhaustion with large files (S3 objects can be TBs)
-**Instead:** Use range requests for reads, multipart upload for writes
-
-### Anti-Pattern 4: Direct Kernel Extension Management
-
-**What:** Trying to load/unload macFUSE kernel extension directly
-**Why bad:** Requires root, complex permission handling
-**Instead:** Use `fuse-native` which embeds and manages the shared library
-
-### Anti-Pattern 5: Blocking UI on Mount Operations
-
-**What:** Synchronous mount/unmount that freezes the UI
-**Why bad:** Poor user experience, macOS may flag app as unresponsive
-**Instead:** Use Tauri async commands with progress events
-
-## Build Order Recommendations
-
-Based on component dependencies, build in this order:
-
-### Phase 1: Foundation (Core Infrastructure)
-1. **Tauri project setup** - Basic app shell, tray icon
-2. **Configuration storage** - Settings schema, keychain integration
-3. **S3 client wrapper** - AWS SDK configuration, basic operations
-
-### Phase 2: FUSE Core (Filesystem)
-1. **FUSE mount/unmount** - Basic fuse-native integration
-2. **Metadata operations** - getattr, readdir with caching
-3. **Directory listing** - ListObjectsV2 integration
-
-### Phase 3: File Operations (Data Flow)
-1. **File read** - Range request implementation
-2. **File write** - Buffered writes with multipart upload
-3. **Error handling** - Proper FUSE error codes
-
-### Phase 4: UI Polish (User Experience)
-1. **Settings window** - Credential configuration
-2. **Status indicators** - Mount state in menu bar
-3. **Error reporting** - User-friendly error messages
-
-### Phase 5: Integration (End-to-End)
-1. **E2E testing** - Full read/write workflows
-2. **Performance tuning** - Cache optimization
-3. **Edge cases** - Network failures, large files
+---
 
 ## Scalability Considerations
 
-| Concern | Single User | Multiple Buckets | Heavy Usage |
-|---------|-------------|------------------|-------------|
-| **Metadata Cache** | In-memory Map | LRU with size limit | Redis/external |
-| **File Cache** | None | Local disk cache | Distributed cache |
-| **Connections** | Single S3 client | Connection pool | Multiple pools |
-| **Uploads** | Single-part | Multipart > 100MB | Parallel multipart |
+| Concern | Small (10 files) | Medium (10K files) | Large (100K+ files) |
+|---------|-------------------|---------------------|---------------------|
+| Metadata cache | In-memory dict | In-memory with LRU eviction | TTL-based eviction, lazy loading |
+| File data cache | All in memory | Temp file backed | Temp file with disk budget |
+| Directory listing | Single B2 API call | Paginated (B2 returns max 10K per call) | Paginated with cursor caching |
+| FSItem memory | Negligible | ~10MB (item objects) | Must implement lazy loading + reclaimItem |
 
-## macOS-Specific Considerations
-
-1. **macFUSE Dependency**: Users must install macFUSE separately (kernel extension requirement)
-2. **Volume Naming**: Use `displayFolder` option in fuse-native for Finder sidebar integration
-3. **Spotlight**: Consider disabling Spotlight indexing on mount points (`.metadata_never_index`)
-4. **Extended Attributes**: Implement `getxattr`/`setxattr` for macOS metadata support
+---
 
 ## Sources
 
-- **gcsfuse** (Google Cloud Storage FUSE): https://github.com/googlecloudplatform/gcsfuse - Architecture patterns, caching strategies
-- **s3fs-fuse**: https://github.com/s3fs-fuse/s3fs-fuse - POSIX compatibility approaches, multipart upload
-- **goofys**: https://github.com/kahing/goofys - Performance optimizations, "filey" vs "file" system design
-- **macFUSE**: https://github.com/macfuse/macfuse - macOS FUSE implementation details
-- **fuse-native**: https://www.npmjs.com/package/fuse-native - Node.js FUSE bindings API
-- **Tauri Documentation**: Context7 /tauri-apps/tauri - IPC patterns, command system
-- **AWS SDK v3**: Context7 /aws/aws-sdk-js-v3 - S3 streaming operations
-- **fuser crate**: Context7 /websites/rs_fuser - Rust FUSE trait patterns (for reference)
+| Source | Type | Confidence |
+|--------|------|------------|
+| [Apple Developer Forums — FSKit tag (23 posts)](https://forums.developer.apple.com/forums/tags/fskit) | Apple DTS Engineer responses | HIGH |
+| [KhaosT/FSKitSample](https://github.com/KhaosT/FSKitSample) | Community sample project (97 stars) | MEDIUM |
+| [Apple DTS on FSUnaryFileSystem limitation](https://forums.developer.apple.com/forums/thread/776322) | DTS Engineer Quinn | HIGH |
+| [Apple DTS on network FS not supported](https://forums.developer.apple.com/forums/thread/776322) | DTS Engineer Quinn | HIGH |
+| [Apple DTS on mount via /sbin/mount](https://forums.developer.apple.com/forums/thread/799283) | DTS Engineer Kevin Elliott | HIGH |
+| [Apple DTS on FSKit performance](https://forums.developer.apple.com/forums/thread/799283) | DTS Engineer Kevin Elliott | HIGH |
+| [Apple DTS on FSKit read-only](https://forums.developer.apple.com/forums/thread/807771) | Forum thread | MEDIUM |
+| [Apple DTS on FSItem reclaim](https://forums.developer.apple.com/forums/thread/799809) | DTS Engineer Kevin Elliott | HIGH |
+| [FSKit sandbox discussion](https://forums.developer.apple.com/forums/thread/808246) | Forum thread | MEDIUM |
+| [FSKit performance/caching](https://forums.developer.apple.com/forums/thread/793013) | Forum thread | MEDIUM |
+| [EdenFS/Meta FSKit interest](https://forums.developer.apple.com/forums/thread/766793) | Forum thread (Meta engineers) | MEDIUM |
+| Apple open-source msdos FSKit implementation | Apple internal reference | LOW (won't build externally) |
+| Training data (FSKit framework API) | Pre-existing knowledge | LOW |
 
-## Confidence Assessment
+---
 
-| Area | Confidence | Notes |
-|------|------------|-------|
-| FUSE Architecture | HIGH | Based on multiple production implementations (gcsfuse, s3fs, goofys) |
-| Tauri Integration | HIGH | Context7 documentation and official patterns |
-| AWS SDK Patterns | HIGH | Context7 verified examples |
-| macOS FUSE | MEDIUM | macFUSE is closed-source since v4, but API is stable |
-| Node.js FUSE | MEDIUM | fuse-native is mature but less documented than Rust alternatives |
+## Open Questions Requiring Phase-Specific Research
 
-## Open Questions
+1. **How exactly to pass B2 bucket name + credentials at mount time?** Options: mount command options via `FSActivateOptionSyntax` in Info.plist, shared Keychain via App Group, or mount options embedded in resource specifier. Needs hands-on experimentation.
 
-1. **Write buffering strategy**: How much to buffer before uploading? (affects consistency vs performance)
-2. **Cache invalidation**: How to detect external changes to S3 bucket?
-3. **Multi-bucket support**: Architecture for mounting multiple buckets simultaneously
-4. **Offline handling**: Behavior when network is unavailable
+2. **What resource type for CloudMount?** `FSGenericURLResource` with a B2 bucket URL? Or `FSBlockDeviceResource` with a dummy device? Or `FSPathURLResource` with a dummy path? The mount command requires a resource specifier — need to determine what works for a fully virtual FS.
+
+3. **Finder sidebar integration:** How to make volumes appear in Finder sidebar? DiskArbitration integration? This is under-documented for FSKit.
+
+4. **KeychainAccess library compatibility with App Groups:** May need to replace KeychainAccess with direct Security framework calls for Keychain sharing between app and extension.
+
+5. **Extension enablement detection:** How does the main app detect if the FSKit extension is enabled? Is there a programmatic check, or must we try to mount and detect failure?
+
+6. **Update safety:** Forum reports indicate that app updates while a volume is mounted can cause unmount without warning and potentially system-wide mount freezes. Need a strategy for safe updates.

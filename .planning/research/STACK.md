@@ -1,209 +1,353 @@
-# Technology Stack: CloudMount
+# Technology Stack: CloudMount v2.0 — FSKit Pivot & Distribution
 
-**Domain:** FUSE-based cloud storage filesystem on macOS
-**Researched:** 2026-02-02
-**Confidence:** HIGH
+**Domain:** Native macOS filesystem extension with cloud storage backend
+**Researched:** 2026-02-05
+**Confidence:** HIGH (FSKit API verified from local SDK headers, Xcode 26.2 / macOS 26.1)
+
+## Executive Summary
+
+The v2.0 pivot replaces the entire Rust layer (fuser + reqwest + tokio + moka) with pure Swift using Apple's FSKit framework. The critical finding is that FSKit ships two resource types: `FSBlockDeviceResource` (V1, macOS 15.4+) for disk-based filesystems, and `FSGenericURLResource` (V2, macOS 26+) for URL/network-based filesystems. Since CloudMount is a network filesystem backed by Backblaze B2 URLs, **the project should target `FSGenericURLResource` on macOS 26+** rather than trying to shoehorn a network filesystem into the block device model.
+
+This also means the minimum deployment target changes from macOS 14 to macOS 26 (Tahoe). This is a reasonable tradeoff: FSKit V2 is purpose-built for this exact use case, and macOS 26 is the current release.
 
 ## Recommended Stack
 
-### Core Technologies
+### Core Framework — FSKit
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| macFUSE | 5.1.3 | FUSE kernel extension for macOS | The only production-ready FUSE implementation for macOS. Provides two backends: FSKit (macOS 15.4+, user-space only, no kernel extension required) and Kernel Backend (best performance, requires Recovery Mode setup). Version 5.1.3 is the latest stable release (Dec 2025) with macOS 26 SDK support and FSKit improvements. |
-| fuser | 0.16.0 | Rust FUSE userspace library | The standard Rust FUSE library. Low-level interface that fully leverages Rust's ownership model. Provides `spawn_mount2()` for background mounting and `Filesystem` trait for implementing custom filesystems. Actively maintained, 700+ code snippets in Context7. |
-| Tauri | 2.9 | Desktop app framework with web frontend | Native-feeling macOS menu bar apps with Rust backend. Uses system WKWebView (no bundled Chromium), resulting in small binary sizes. Supports system tray icons, native menus, and shell commands. Version 2.9 is current stable with full macOS support. |
-| aws-sdk-s3 | 1.121.0 | S3 API client for Rust | Official AWS SDK for Rust. Full S3 API support including presigned URLs, multipart uploads, and async operations. Works with any S3-compatible storage (Backblaze B2, MinIO, etc.) via endpoint configuration. |
-| Tokio | 1.43+ | Async runtime | Required for aws-sdk-s3 and async filesystem operations. Use `features = ["full"]` for comprehensive async support. |
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| FSKit | V2 (macOS 26+) | User-space filesystem framework | Apple's native replacement for FUSE. Eliminates macFUSE dependency entirely. V2 adds `FSGenericURLResource` for URL-based/network filesystems — exactly what CloudMount needs. Runs as an app extension within the app bundle. |
+| `FSUnaryFileSystem` | V1+ | Base filesystem class | Simplified single-volume filesystem model. Subclass this and implement `FSUnaryFileSystemOperations` protocol (probe, load, unload). |
+| `FSGenericURLResource` | V2 (macOS 26+) | URL-based resource | Network filesystem resource. Accepts arbitrary URL schemes. CloudMount registers a custom `b2://` scheme. This is the **critical piece** that makes FSKit viable for cloud storage without block device emulation. |
+| `FSVolume` subclass | V1+ | Volume implementation | Subclass `FSVolume` and conform to `FSVolume.Operations`, `FSVolume.PathConfOperations`, `FSVolume.ReadWriteOperations`, `FSVolume.OpenCloseOperations`. This is where all filesystem logic lives. |
 
-### Supporting Libraries
+**Confidence:** HIGH — Verified from SDK headers at `/Applications/Xcode.app/.../FSKit.framework/Versions/A/Headers/`. `FSKIT_API_AVAILABILITY_V1` = `API_AVAILABLE(macos(15.4))`, `FSKIT_API_AVAILABILITY_V2` = `API_AVAILABLE(macos(26.0))`.
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| aws-config | 1.8.12+ | AWS configuration loading | Required companion to aws-sdk-s3. Loads credentials from environment, ~/.aws/credentials, or IAM roles. Use `features = ["behavior-version-latest"]` |
-| serde + serde_json | 1.0+ | Configuration serialization | For storing user preferences (mount points, credentials) in JSON format |
-| directories | 5.0+ | XDG directory paths | For storing config in appropriate macOS locations (`~/Library/Application Support/`) |
-| thiserror | 2.0+ | Error handling | For defining custom error types with minimal boilerplate |
-| tracing | 0.1+ | Structured logging | For debug output and operational visibility |
-| tauri-plugin-shell | 2.x | Shell command execution | For mounting/unmounting FUSE filesystems from Tauri frontend |
-| tauri-plugin-store | 2.x | Persistent storage | For saving user settings between app restarts |
+### FSKit Protocols to Implement
 
-### Development Tools
+The following protocols define the filesystem's capabilities. All are from `FSVolume.h`:
 
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| Xcode / Xcode Command Line Tools | macOS development | Required for Tauri. Install via `xcode-select --install` if only building for desktop |
-| cargo-tauri | Tauri CLI | Install with `cargo install tauri-cli` |
-| rustup | Rust toolchain management | Install from https://rustup.rs |
+| Protocol | Required? | Purpose | Notes |
+|----------|-----------|---------|-------|
+| `FSUnaryFileSystemOperations` | **Yes** | Probe, load, unload resource | Core lifecycle. Entry point for the filesystem extension. |
+| `FSVolume.Operations` (extends `FSVolume.PathConfOperations`) | **Yes** | Mount, unmount, activate, deactivate, lookup, create, remove, rename, enumerate, get/set attributes, readSymbolicLink, createSymbolicLink, createLink, reclaimItem, synchronize | The primary filesystem operations protocol. ~15 required methods. |
+| `FSVolume.PathConfOperations` | **Yes** (via Operations) | maximumLinkCount, maximumNameLength, etc. | Filesystem limits. |
+| `FSVolume.ReadWriteOperations` | **Yes** | read(from:at:length:into:), write(contents:to:at:) | Data I/O via extension process (not kernel offloaded). Appropriate for network filesystems where data flows through the extension. |
+| `FSVolume.OpenCloseOperations` | Recommended | openItem, closeItem | Enables tracking open file handles for write-on-close strategy. |
+| `FSVolume.XattrOperations` | Optional | Extended attributes | Can inhibit if not needed. CloudMount should implement limited xattrs to support Finder metadata. |
+| `FSVolume.AccessCheckOperations` | Optional | Access control | Can inhibit. Default POSIX checks sufficient. |
+| `FSVolume.RenameOperations` | No | Volume renaming | Not applicable — volume name is the bucket name. |
+| `FSVolume.PreallocateOperations` | No | Space preallocation | Not applicable — cloud storage has no block allocation. |
 
-## Installation
+### HTTP Client — URLSession
 
-### Prerequisites
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| `URLSession` | Foundation (built-in) | HTTP client for B2 API | Zero dependencies. Native async/await support. Automatic HTTP/2, connection pooling, background session support. Replaces Rust `reqwest`. |
+| Swift `async`/`await` | Swift 6+ | Concurrency model | Natural fit for FSKit callback-based API (methods bridge to async). Structured concurrency with `Task`, `TaskGroup` for parallel operations. |
 
+**Do NOT add:**
+- **Alamofire**: URLSession is sufficient for B2's REST API. Alamofire adds complexity without meaningful benefit for server-to-server HTTP calls.
+- **AsyncHTTPClient (SwiftNIO)**: Server-side library. URLSession is the right choice for a macOS app.
+- **Any third-party Swift B2 client**: None exist with quality/maintenance worth depending on. B2's API is simple enough for direct URLSession calls.
+
+### Caching
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| `NSCache` | Foundation (built-in) | In-memory metadata cache | Replaces Rust `moka::sync::Cache`. Thread-safe, automatic eviction under memory pressure. No dependencies. |
+| `FileManager` + temp directory | Foundation (built-in) | Read cache for file data | Cache downloaded file data on disk to avoid re-fetching. Use `NSTemporaryDirectory()` with LRU eviction logic. |
+
+### Existing Stack (Retained)
+
+| Technology | Version | Purpose | Status |
+|------------|---------|---------|--------|
+| SwiftUI | macOS 26+ | Menu bar app UI | **Keep** — Already validated. |
+| KeychainAccess | 4.2.2 | Credential storage | **Keep** — Already integrated in Package.swift. |
+| JSON file persistence | N/A | Bucket config storage | **Keep** — Simple, works. |
+
+### What Gets Removed
+
+| Technology | Reason for Removal |
+|------------|-------------------|
+| Rust daemon (fuser 0.16) | Replaced by FSKit extension |
+| reqwest (Rust HTTP) | Replaced by URLSession |
+| moka (Rust cache) | Replaced by NSCache |
+| tokio (Rust async) | Replaced by Swift async/await |
+| serde/serde_json (Rust) | Replaced by Swift Codable |
+| Unix domain socket IPC | Eliminated — single-process architecture |
+| macFUSE dependency | Eliminated — FSKit is built into macOS |
+| Entire Cargo.toml | No more Rust |
+
+## App Packaging & Distribution
+
+### Build System — Xcode Project Required
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| Xcode project (.xcodeproj) | Xcode 26+ | Build system | **Swift Package Manager cannot build FSKit extensions.** App extensions require an Xcode project with proper target configuration, entitlements, provisioning profiles, and Info.plist for both the host app and the extension. Migrate from `Package.swift` to `.xcodeproj`. |
+| Swift Package Manager | 5.9+ | Dependency management only | Keep using SPM for third-party dependencies (KeychainAccess). Add as package dependency in Xcode project, not as the build system. |
+
+**Why Xcode project, not Package.swift?** FSKit extensions are app extensions (like Notification Service Extensions or File Provider Extensions). They require:
+1. A separate extension target with its own bundle identifier
+2. An `NSExtension` dictionary in the extension's `Info.plist`
+3. `EXAppExtensionAttributes` with `FSPersonalities`, `FSShortName`, `FSSupportedSchemes`
+4. Code signing with provisioning profiles for both app and extension
+5. The extension embedded in the app bundle at `CloudMount.app/Contents/Extensions/CloudMountFS.appex`
+
+None of this is expressible in `Package.swift`.
+
+### App Bundle Structure
+
+```
+CloudMount.app/
+├── Contents/
+│   ├── Info.plist                    (host app)
+│   ├── MacOS/
+│   │   └── CloudMount                (main executable)
+│   ├── Resources/
+│   │   └── Assets.car
+│   ├── Extensions/
+│   │   └── CloudMountFS.appex/       (FSKit extension)
+│   │       ├── Contents/
+│   │       │   ├── Info.plist        (extension with FSKit config)
+│   │       │   ├── MacOS/
+│   │       │   │   └── CloudMountFS  (extension executable)
+│   │       │   └── Resources/
+│   ├── Frameworks/                    (if needed for shared code)
+│   └── _CodeSignature/
+```
+
+### Extension Info.plist Keys
+
+The FSKit extension's `Info.plist` must include (from SDK documentation in `FSResource.h`):
+
+```xml
+<key>NSExtension</key>
+<dict>
+    <key>NSExtensionPointIdentifier</key>
+    <string>com.apple.fskit.filesystem</string>
+    <key>NSExtensionPrincipalClass</key>
+    <string>CloudMountFS.CloudMountFileSystem</string>
+    <key>EXAppExtensionAttributes</key>
+    <dict>
+        <key>FSShortName</key>
+        <string>cloudmount</string>
+        <key>FSSupportedSchemes</key>
+        <array>
+            <string>b2</string>
+        </array>
+        <key>FSPersonalities</key>
+        <dict>
+            <key>CloudMount_B2</key>
+            <dict>
+                <key>FSPersistentIdentifierBasis</key>
+                <string>resource-dependent</string>
+            </dict>
+        </dict>
+    </dict>
+</dict>
+```
+
+### Code Signing & Notarization
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| Developer ID Application certificate | N/A | Code signing for outside App Store | Required for notarization. Developer already has Apple Developer account. Sign both the host app and the FSKit extension. |
+| `codesign` | Built-in | Code sign binaries | Sign with `--options runtime` for hardened runtime (required for notarization). |
+| `notarytool` | Xcode 26+ | Submit for notarization | Replaces deprecated `altool`. Use `xcrun notarytool submit --wait`. Store credentials with `xcrun notarytool store-credentials`. |
+| Hardened Runtime | N/A | Security requirement | **Required** for notarization. Enable in Xcode target settings. May need entitlements for network access. |
+
+**Notarization flow (verified from Apple developer docs):**
 ```bash
-# Install macFUSE (download from https://macfuse.io or GitHub releases)
-# For Apple Silicon Macs: Requires enabling kernel extensions in Recovery Mode
-# For macOS 15.4+: Can use FSKit backend without kernel extension
+# 1. Archive and export
+xcodebuild archive -scheme CloudMount -archivePath build/CloudMount.xcarchive
+xcodebuild -exportArchive -archivePath build/CloudMount.xcarchive \
+  -exportPath build/export -exportOptionsPlist ExportOptions.plist
 
-# Install Rust
-curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+# 2. Create ZIP for notarization
+ditto -c -k --keepParent "build/export/CloudMount.app" "build/CloudMount.zip"
 
-# Install Xcode Command Line Tools
-xcode-select --install
+# 3. Submit
+xcrun notarytool submit build/CloudMount.zip \
+  --keychain-profile "notarytool-password" --wait
 
-# Install cargo-tauri
-cargo install tauri-cli
+# 4. Staple
+xcrun stapler staple "build/export/CloudMount.app"
 ```
 
-### Cargo.toml Dependencies
+### DMG Creation
 
-```toml
-[dependencies]
-# FUSE filesystem
-fuser = "0.16.0"
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| create-dmg | 1.2.3 | Create fancy DMG installer | Shell script, 2.5k GitHub stars, MIT license. Supports background images, icon positioning, Applications drop link. Install via `brew install create-dmg`. Latest release Nov 2025. |
 
-# AWS S3 SDK
-aws-config = { version = "1.8.12", features = ["behavior-version-latest"] }
-aws-sdk-s3 = "1.121.0"
-
-# Async runtime
-tokio = { version = "1.43", features = ["full"] }
-
-# Serialization
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-
-# Configuration storage
-directories = "5.0"
-
-# Error handling
-thiserror = "2.0"
-
-# Logging
-tracing = "0.1"
-
-# Tauri (for the menu bar app)
-tauri = { version = "2.9", features = ["tray-icon", "native-tls"] }
-
-[build-dependencies]
-tauri-build = { version = "2.9", features = [] }
-
-[profile.release]
-panic = "abort"
-codegen-units = 1
-lto = true
-opt-level = "s"
+**Usage:**
+```bash
+create-dmg \
+  --volname "CloudMount" \
+  --volicon "icon.icns" \
+  --background "dmg-background.png" \
+  --window-pos 200 120 \
+  --window-size 660 400 \
+  --icon-size 100 \
+  --icon "CloudMount.app" 180 190 \
+  --hide-extension "CloudMount.app" \
+  --app-drop-link 480 190 \
+  "CloudMount.dmg" \
+  "build/export/"
 ```
+
+### Homebrew Cask Distribution
+
+| Technology | Purpose | Notes |
+|------------|---------|-------|
+| Homebrew Cask | `brew install --cask cloudmount` | Submit to homebrew-cask tap. Requires notarized `.dmg` hosted on GitHub Releases. |
+
+**Cask formula** (to submit to `homebrew/homebrew-cask`):
+```ruby
+cask "cloudmount" do
+  version "2.0.0"
+  sha256 "abc123..."
+
+  url "https://github.com/OWNER/cloudmount/releases/download/v#{version}/CloudMount-#{version}.dmg"
+  name "CloudMount"
+  desc "Mount Backblaze B2 buckets as local volumes"
+  homepage "https://github.com/OWNER/cloudmount"
+
+  depends_on macos: ">= :tahoe"   # macOS 26+ for FSKit V2
+
+  app "CloudMount.app"
+
+  zap trash: [
+    "~/Library/Application Support/CloudMount",
+    "~/Library/Preferences/com.cloudmount.app.plist",
+  ]
+end
+```
+
+**Key requirement:** `depends_on macos: ">= :tahoe"` because FSKit `FSGenericURLResource` requires macOS 26.
+
+## CI/CD — GitHub Actions
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| GitHub Actions | N/A | CI/CD pipeline | Free for open-source repos. Native macOS runners available. |
+| `macos-latest` runner | macOS 15+ (arm64) | Build environment | Apple Silicon runners. Use `macos-15` or later for Xcode 26 support. May need `macos-26` runner when available. |
+| `actions/checkout@v5` | v5 | Repository checkout | Standard. |
+| `softprops/action-gh-release` | latest | Create GitHub releases | Upload DMG as release asset on tag push. |
+
+**Workflow structure:**
+
+1. **PR Check** (`on: pull_request`): Build + test (no signing)
+2. **Release** (`on: push tags v*`): Build → sign → notarize → create DMG → upload to GitHub Release → update Homebrew Cask
+
+**Code signing in CI** (verified from GitHub Actions docs):
+```yaml
+- name: Install certificate
+  env:
+    BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+    P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+    KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+  run: |
+    CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+    KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+    echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+    security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+    security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+    security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+    security import $CERTIFICATE_PATH -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+    security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+    security list-keychain -d user -s $KEYCHAIN_PATH
+```
+
+**Secrets required:**
+- `BUILD_CERTIFICATE_BASE64` — Developer ID Application certificate (.p12), base64-encoded
+- `P12_PASSWORD` — Password for the .p12 file
+- `KEYCHAIN_PASSWORD` — Arbitrary password for the temporary keychain
+- `APPLE_ID` — Apple ID for notarization
+- `APPLE_TEAM_ID` — Developer Team ID
+- `NOTARIZATION_PASSWORD` — App-specific password for notarization
+
+**Runner concern:** GitHub's `macos-latest` currently maps to macOS 15. Building for macOS 26 SDK requires Xcode 26, which may not be available on GitHub-hosted runners yet (as of Feb 2026). **Fallback:** Use a self-hosted runner or Xcode Cloud until GitHub updates their macOS runner images.
 
 ## Alternatives Considered
 
-| Recommended | Alternative | When to Use Alternative |
-|-------------|-------------|-------------------------|
-| fuser 0.16.0 | easy_fuser | Use easy_fuser if you want a higher-level, more ergonomic API with built-in templates like `MirrorFsReadOnly`. However, for a cloud storage filesystem with custom caching needs, fuser's low-level control is preferred. |
-| Tauri 2.9 | SwiftUI + AppKit | Use SwiftUI if you want a 100% native macOS app with no web technologies. However, Tauri's Rust backend integration and rapid development make it ideal for a single-day build. |
-| aws-sdk-s3 | rust-s3 crate | rust-s3 is simpler but less actively maintained. Use aws-sdk-s3 for production reliability and full S3 API coverage. |
-| macFUSE | FSKit (native macOS 15.4+) | FSKit is Apple's new user-space filesystem framework. However, macFUSE provides broader macOS version support (12+) and mature ecosystem. Consider FSKit-only for macOS 15.4+ only deployments. |
+| Category | Recommended | Alternative | Why Not |
+|----------|-------------|-------------|---------|
+| Filesystem framework | FSKit V2 | macFUSE 5.x + fuser | macFUSE requires third-party kernel extension or user enables it. FSKit is built-in, no user setup. FSKit V2's `FSGenericURLResource` is purpose-built for network filesystems. |
+| Filesystem framework | FSKit V2 | FileProvider (NSFileProviderReplicatedExtension) | FileProvider is for iCloud-style syncing, not mounting volumes. Doesn't appear as a mounted volume in Finder sidebar. Wrong abstraction for "mount bucket as drive." |
+| FSKit resource type | `FSGenericURLResource` (V2) | `FSBlockDeviceResource` (V1) | Block device resource requires emulating a block device for a network filesystem — wrong abstraction. Would need a RAM disk or sparse image as intermediary. Fragile and wasteful. |
+| Deployment target | macOS 26 (Tahoe) | macOS 15.4 (Sequoia) | macOS 15.4 only has `FSBlockDeviceResource`. `FSGenericURLResource` for URL/network filesystems requires V2 (macOS 26). The cost of supporting 15.4 is massive architectural complexity. |
+| HTTP client | URLSession | swift-http-client, Alamofire | URLSession is built-in, async/await native, zero dependencies. B2's API is simple REST — no need for a wrapper library. |
+| Build system | Xcode project | Swift Package Manager | SPM cannot build app extensions. FSKit extensions require Xcode project targets with Info.plist, entitlements, and embedded extension bundles. |
+| DMG tool | create-dmg | hdiutil directly | create-dmg wraps hdiutil with nice defaults (background image, icon positioning, Applications shortcut). Saves boilerplate. |
+| CI/CD | GitHub Actions | Xcode Cloud | GitHub Actions is free for open-source, more flexible, supports custom scripts. Xcode Cloud has limitations with non-App Store distribution. |
 
-## What NOT to Use
+## What NOT to Add
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| osxfuse (legacy) | Deprecated, renamed to macFUSE. Old versions incompatible with modern macOS. | macFUSE 5.x |
-| fuse-rs (archived) | No longer maintained, lacks modern Rust patterns. | fuser |
-| s3fs-fuse (directly) | C++ implementation, not a library. Good reference but not embeddable. | Build custom with fuser + aws-sdk-s3 |
-| Electron | Massive bundle size, memory hungry. Overkill for a menu bar app. | Tauri (uses system WebView) |
-| blocking AWS SDK calls | Will freeze the UI thread. | Always use async with Tokio |
+| SwiftNIO / async-http-client | Server-side networking stack. Massive dependency for a simple REST client. | URLSession (built-in) |
+| Alamofire | Abstraction over URLSession that adds no value for B2's simple API. Adds dependency. | URLSession (built-in) |
+| GRDB / SQLite | Over-engineered for metadata caching. | NSCache (in-memory) + JSON files |
+| Swift Crypto | Not needed. URLSession handles HTTPS. B2 auth is via API tokens, not custom crypto. | Foundation (built-in) |
+| Combine | Legacy reactive framework. Swift concurrency (async/await) supersedes it for new code. | Swift async/await |
+| Any Rust code | The entire point of v2.0 is eliminating the Rust layer. | Pure Swift |
+| macFUSE | The entire point of v2.0 is eliminating this dependency. | FSKit |
+| CocoaPods / Carthage | SPM is the standard. Xcode has native SPM integration. | Swift Package Manager (for deps) |
 
-## Stack Patterns by Variant
+## Version Compatibility Matrix
 
-**If targeting macOS 15.4+ only:**
-- Use macFUSE's FSKit backend (`-o backend=fskit`)
-- No Recovery Mode setup required for users
-- Slightly different performance characteristics (user-space only)
+| Component | Minimum | Recommended | Notes |
+|-----------|---------|-------------|-------|
+| macOS | 26.0 (Tahoe) | 26.0+ | Required for FSKit V2 (`FSGenericURLResource`) |
+| Xcode | 26.0 | 26.2+ | Required for macOS 26 SDK with FSKit V2 |
+| Swift | 6.0 | 6.0+ | Ships with Xcode 26 |
+| Swift tools version | 5.9+ | 6.0 | For Package.swift (SPM dependencies only) |
+| KeychainAccess | 4.2.2 | 4.2.2 | Already pinned, no change needed |
 
-**If supporting macOS 12-15.3:**
-- Use macFUSE's Kernel Backend
-- Users must enable kernel extensions in Recovery Mode (one-time)
-- Best performance and full feature support
+## Migration Path: Package.swift → Xcode Project
 
-**If rapid prototyping:**
-- Use easy_fuser instead of fuser for simpler trait implementation
-- Provides `DefaultFuseHandler` and templates to reduce boilerplate
+The current project uses `Package.swift` as the build system. The migration to Xcode project should:
 
-## Version Compatibility
+1. **Create new Xcode project** with two targets:
+   - `CloudMount` (macOS App) — host app with menu bar UI
+   - `CloudMountFS` (FSKit Extension) — filesystem extension
+2. **Add SPM dependency** for KeychainAccess in Xcode project settings
+3. **Move existing Swift files** into the app target
+4. **Create shared framework** (optional) for code shared between app and extension (e.g., B2 API client, config models)
+5. **Configure signing** for both targets with the same team
+6. **Remove** `Package.swift`, `Cargo.toml`, `Cargo.lock`, and all Rust source files
 
-| Package | Compatible With | Notes |
-|---------|-----------------|-------|
-| fuser 0.16.0 | macFUSE 4.x - 5.x | Requires macFUSE installed on system |
-| aws-sdk-s3 1.121.0 | aws-config 1.8.x | Keep versions in sync from same SDK release |
-| Tauri 2.9 | Rust 1.70+ | Requires recent Rust toolchain |
-| Tokio 1.43 | aws-sdk-s3 1.x | Full compatibility with AWS SDK async runtime |
+## Critical Architecture Note: FSKit Extension Lifecycle
 
-## Architecture Integration
+FSKit extensions run **out-of-process** from the host app. The extension is a separate binary that the system's `fskitd` daemon manages. Key implications:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Tauri App (Menu Bar)                     │
-│  ┌─────────────────┐        ┌─────────────────────────────┐ │
-│  │  Frontend (JS)  │◄──────►│  Rust Backend (Tauri cmds)  │ │
-│  │  - Menu UI      │        │  - Config management        │ │
-│  │  - Settings     │        │  - FUSE spawn/kill          │ │
-│  └─────────────────┘        └─────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    FUSE Filesystem (Rust)                    │
-│  ┌─────────────────┐        ┌─────────────────────────────┐ │
-│  │  fuser trait    │◄──────►│  S3 Client (aws-sdk-s3)     │ │
-│  │  implementation │        │  - List objects             │ │
-│  │  - Directory    │        │  - Download                 │ │
-│  │  - File ops     │        │  - Upload                   │ │
-│  └─────────────────┘        └─────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-                    ┌──────────────────┐
-                    │   macFUSE        │
-                    │   (Kernel/FSKit) │
-                    └──────────────────┘
-                              │
-                              ▼
-                    ┌──────────────────┐
-                    │   Finder/macOS   │
-                    └──────────────────┘
-```
+- The **host app** (menu bar UI) and the **extension** (filesystem) are separate processes
+- They share the same app bundle but have separate address spaces
+- Communication between app and extension uses **`FSClient`** API, NOT direct function calls
+- The extension is activated by the system when a filesystem operation is requested
+- This is similar to how File Provider extensions work
 
-## Key Implementation Notes
-
-1. **FUSE Implementation Pattern**: Implement the `Filesystem` trait from fuser. Key methods:
-   - `lookup()` - Resolve paths to file attributes
-   - `readdir()` - List directory contents
-   - `read()` - Read file data (fetch from S3)
-   - `write()` - Write file data (upload to S3)
-   - `getattr()` - Get file metadata
-
-2. **S3-Compatible Storage**: Both AWS S3 and Backblaze B2 work with aws-sdk-s3. For B2:
-   ```rust
-   let config = aws_config::from_env()
-       .endpoint_url("https://s3.us-west-002.backblazeb2.com")
-       .load()
-       .await;
-   ```
-
-3. **Background Mounting**: Use `spawn_mount2()` to run FUSE in a background thread, allowing the Tauri app to remain responsive.
-
-4. **Menu Bar Integration**: Use Tauri's `tray-icon` feature for the status bar menu.
+This means:
+- Shared code (B2 API client, config models) should live in a **shared framework** target
+- The app uses `FSClient.shared` to discover and interact with the extension
+- State synchronization between app and extension needs explicit design (App Groups, UserDefaults suite, etc.)
 
 ## Sources
 
-- **macFUSE 5.1.3** — GitHub releases (Dec 23, 2025) — Verified current version with FSKit backend support
-- **fuser 0.16.0** — docs.rs and Context7 (/websites/rs_fuser) — Verified API stability, `spawn_mount2()` recommended
-- **easy_fuser** — Context7 (/websites/rs_easy_fuser) — Evaluated as alternative, 1531 code snippets
-- **Tauri 2.9** — Context7 (/tauri-apps/tauri) and official docs — Verified tray-icon and native-tls features
-- **aws-sdk-s3 1.121.0** — docs.rs and Context7 (/awslabs/aws-sdk-rust) — Verified S3 client usage patterns
-- **Backblaze B2 S3-Compatible API** — Official docs — Verified S3 API compatibility and endpoint configuration
+- **FSKit headers** — `/Applications/Xcode.app/.../FSKit.framework/Versions/A/Headers/` — Direct SDK inspection on Xcode 26.2, macOS 26.1. **HIGH confidence.**
+- **FSKit availability macros** — `FSKitDefines.h`: V1 = `macos(15.4)`, V2 = `macos(26.0)`. **HIGH confidence.**
+- **`FSGenericURLResource`** — `FSResource.h` line 389: `FSKIT_API_AVAILABILITY_V2`. Supports custom URL schemes via `FSSupportedSchemes`. **HIGH confidence.**
+- **`FSUnaryFileSystem`** — `FSUnaryFileSystem.h`: Simplified single-volume model with probe/load/unload. **HIGH confidence.**
+- **`FSVolume.Operations`** — `FSVolume.h`: ~15 required methods for full filesystem. **HIGH confidence.**
+- **Notarization workflow** — Apple Developer Documentation via Context7 (`/websites/developer_apple`): notarytool, codesign, hardened runtime requirements. **HIGH confidence.**
+- **GitHub Actions macOS signing** — GitHub Actions docs via Context7 (`/websites/github_en_actions`): Certificate import, keychain setup, provisioning profiles. **HIGH confidence.**
+- **create-dmg** — GitHub repo (https://github.com/create-dmg/create-dmg): v1.2.3, MIT license, 2.5k stars. **HIGH confidence.**
+- **Homebrew Cask cookbook** — Official Homebrew docs (https://docs.brew.sh/Cask-Cookbook): Cask format, depends_on, stanza order. **HIGH confidence.**
 
 ---
-*Stack research for: CloudMount — FUSE-based cloud storage filesystem on macOS*
-*Researched: 2026-02-02*
+*Stack research for: CloudMount v2.0 — FSKit Pivot & Distribution*
+*Researched: 2026-02-05*
+*Supersedes: v1.0 stack research (2026-02-02)*
