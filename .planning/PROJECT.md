@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A macOS menu bar app that mounts Backblaze B2 cloud storage buckets as local FUSE volumes in Finder. A free, open-source alternative to Mountain Duck with a native SwiftUI interface and a Rust FUSE daemon for file operations.
+A macOS menu bar app that mounts Backblaze B2 cloud storage buckets as local volumes in Finder. A free, open-source alternative to Mountain Duck with a native SwiftUI interface. v1.0 used a Rust FUSE daemon; v2.0 pivots to Apple's FSKit framework for a pure-Swift, single-process architecture.
 
 ## Core Value
 
@@ -21,7 +21,14 @@ Users can mount cloud storage buckets as local drives and access them seamlessly
 
 ### Active
 
-(None — next milestone will define new requirements via `/gsd-new-milestone`)
+<!-- v2.0 FSKit Pivot & Distribution -->
+- [ ] Rewrite filesystem layer from Rust/FUSE to Swift/FSKit
+- [ ] Port B2 API client from Rust to Swift
+- [ ] Remove Rust daemon and macFUSE dependency
+- [ ] Package as a proper macOS .app bundle
+- [ ] Distribute via GitHub Releases (.dmg)
+- [ ] Distribute via Homebrew (Cask)
+- [ ] CI/CD workflow for automated build, sign, and release
 
 ### Out of Scope
 
@@ -51,10 +58,10 @@ Shipped v1.0 MVP with ~6,042 LOC (1,333 Swift + 4,709 Rust).
 
 ## Constraints
 
-- **Platform**: macOS 12+ only (Monterey or later)
-- **Tech Stack**: Swift/SwiftUI (UI) + Rust (FUSE daemon)
-- **Dependencies**: User must install macFUSE separately
-- **Provider Priority**: Backblaze B2 only (generic S3 planned for v2)
+- **Platform**: macOS 15.4+ (Sequoia — required for FSKit)
+- **Tech Stack**: Pure Swift/SwiftUI (UI + filesystem via FSKit)
+- **Dependencies**: None (FSKit is built into macOS, no macFUSE needed)
+- **Provider Priority**: Backblaze B2 only (generic S3 planned for later)
 
 ## Key Decisions
 
@@ -71,5 +78,17 @@ Shipped v1.0 MVP with ~6,042 LOC (1,333 Swift + 4,709 Rust).
 | Permanent delete (ignore versioning) | MVP simplicity | Good |
 | Open source release | Community contribution, no licensing complexity | Pending |
 
+## Current Milestone: v2.0 FSKit Pivot & Distribution
+
+**Goal:** Replace the Rust FUSE daemon with Apple's FSKit framework for a pure-Swift architecture, then package and distribute via GitHub Releases and Homebrew with CI/CD automation.
+
+**Target features:**
+- FSKit-based filesystem module replacing Rust FUSE daemon
+- Swift B2 API client (porting from Rust reqwest to Swift URLSession/async-await)
+- No external dependencies (no macFUSE installation required)
+- Code-signed and notarized .app/.dmg for GitHub Releases
+- Homebrew Cask formula for `brew install cloudmount`
+- GitHub Actions workflow: PR checks (build + test) and tag-triggered releases
+
 ---
-*Last updated: 2026-02-05 after v1.0 milestone*
+*Last updated: 2026-02-05 after v2.0 milestone start*

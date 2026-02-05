@@ -5,16 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Users can mount cloud storage buckets as local drives and access them seamlessly in Finder with a beautiful status bar interface for management.
-**Current focus:** v1.0 milestone complete — planning next milestone
+**Current focus:** v2.0 FSKit Pivot & Distribution
 
 ## Current Position
 
-Phase: All v1.0 phases complete (1-4)
-Plan: N/A
-Status: Milestone v1.0 shipped
-Last activity: 2026-02-05 — v1.0 milestone archived
-
-Progress: [██████████████] 100% (v1.0)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-05 — Milestone v2.0 started
 
 ## What's Complete
 
@@ -28,7 +26,14 @@ See: .planning/milestones/v1.0-ROADMAP.md for full details
 
 ## What's Left
 
-Next milestone not yet planned. Run `/gsd-new-milestone` to start.
+### v2.0 FSKit Pivot & Distribution
+- [ ] Rewrite filesystem layer: Rust/FUSE → Swift/FSKit
+- [ ] Port B2 API client: Rust → Swift
+- [ ] Remove Rust daemon and macFUSE dependency
+- [ ] Package as .app bundle
+- [ ] GitHub Releases with .dmg
+- [ ] Homebrew Cask
+- [ ] CI/CD workflow (PR checks + tag releases)
 
 ## Accumulated Context
 
