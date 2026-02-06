@@ -5,8 +5,6 @@
     <key>method</key>
     <string>developer-id</string>
     <key>signingStyle</key>
-    <string>manual</string>
-    <key>signingCertificate</key>
-    <string>Developer ID Application</string>
+    <string>automatic</string>
 </dict>
 </plist>
