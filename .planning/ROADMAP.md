@@ -29,7 +29,7 @@ See: .planning/milestones/v1.0-ROADMAP.md for full details.
 
 - [x] **Phase 5: Build System & B2 Client** - Xcode project migration + Swift B2 API client
 - [x] **Phase 6: FSKit Filesystem** - FSKit extension with full volume operations wired to B2
-- [ ] **Phase 7: App Integration** - Replace daemon with mount orchestration and update UI
+- [x] **Phase 7: App Integration** - Replace daemon with mount orchestration and update UI
 - [ ] **Phase 8: Distribution** - Code signing, notarization, DMG, Homebrew Cask, CI/CD pipeline
 
 ## Phase Details
@@ -84,7 +84,7 @@ Plans:
 
 Plans:
 - [x] 07-01-PLAN.md — MountClient + MountMonitor + ExtensionDetector (infrastructure)
-- [ ] 07-02-PLAN.md — Wire AppState, MenuContentView, OnboardingView (UI integration)
+- [x] 07-02-PLAN.md — Wire AppState, MenuContentView, OnboardingView (UI integration)
 
 ### Phase 8: Distribution
 **Goal**: Users can install CloudMount via DMG download or `brew install --cask cloudmount`, with releases automated through CI/CD
@@ -116,5 +116,5 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 4. Configuration & Polish | v1.0 | 2/2 | Complete | 2026-02-03 |
 | 5. Build System & B2 Client | v2.0 | 5/5 | Complete | 2026-02-05 |
 | 6. FSKit Filesystem | v2.0 | 4/4 | Complete | 2026-02-06 |
-| 7. App Integration | v2.0 | 1/2 | In progress | - |
+| 7. App Integration | v2.0 | 2/2 | Complete | 2026-02-06 |
 | 8. Distribution | v2.0 | 0/TBD | Not started | - |

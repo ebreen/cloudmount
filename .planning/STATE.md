@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Users can mount cloud storage buckets as local drives and access them seamlessly in Finder with a beautiful status bar interface for management.
-**Current focus:** Phase 7 (App Integration) — wiring mount orchestration and UI
+**Current focus:** Phase 7 verified ✓ — ready for Phase 8 (Distribution)
 
 ## Current Position
 
 Phase: 7 of 8 (App Integration)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-02-06 — Completed 07-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase verified ✓
+Last activity: 2026-02-06 — Phase 7 verified (11/11 must-haves passed)
 
-Progress: [████████████████░░░░] 80% (24/~30 plans — v1.0 complete, v2.0 in progress)
+Progress: [█████████████████░░░] 83% (25/~30 plans — v1.0 complete, v2.0 in progress)
 
 ## What's Complete
 
@@ -35,13 +35,14 @@ Progress: [████████████████░░░░] 80% (24
 - [x] Phase 6 Plan 3: Volume operations (lookup, enumerate, create, remove, rename, attributes)
 - [x] Phase 6 Plan 4: File I/O operations (open/read/write/close)
 - [x] Phase 7 Plan 1: MountClient + MountMonitor + ExtensionDetector (infrastructure)
+- [x] Phase 7 Plan 2: AppState mount orchestration + MenuContentView wiring + OnboardingView (UI integration)
 
 See: .planning/milestones/v1.0-ROADMAP.md
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 24
+- Total plans completed: 25
 - Average duration: —
 - Total execution time: —
 
@@ -55,7 +56,7 @@ See: .planning/milestones/v1.0-ROADMAP.md
 | 4. Configuration & Polish | 2 | — | — |
 | 5. Build System & B2 Client | 5/5 | 20min | 4.0min |
 | 6. FSKit Filesystem | 4/4 | 40min | 10.0min |
-| 7. App Integration | 1/2 | 2min | 2.0min |
+| 7. App Integration | 2/2 | 12min | 6.0min |
 
 *Updated after each plan completion*
 
@@ -91,9 +92,12 @@ Recent decisions affecting current work:
 - diskutil unmount preferred over umount — more graceful, handles busy volumes
 - stat() device ID comparison for mount detection — reliable, no polling
 - withCheckedThrowingContinuation + terminationHandler for non-blocking Process execution
+- Per-config MountStatus enum on AppState keyed by UUID — independent per-mount status tracking
+- Combine sink on MountMonitor.$mountedPaths — detects external unmounts without polling
 
 ### Blockers/Concerns
 
+- **FSKit V2 runtime mount issue:** Extension loads and is found by fskitd, but `mount -F -t b2` returns "does not support operation mount" — likely FSUnaryFileSystemOperations registration or entitlement issue. Needs investigation before Phase 8 distribution.
 - FSKit V2 is immature — `removeItem` may not fire (known bug), no kernel caching (~121us/syscall)
 - Extension must be manually enabled by users in System Settings (no programmatic API)
 - GitHub Actions runner may not have macOS 26 SDK yet — may need self-hosted or Xcode Cloud
@@ -104,6 +108,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06T10:54:02Z
-Stopped at: Completed 07-01-PLAN.md — ready for 07-02
+Last session: 2026-02-06
+Stopped at: Phase 7 verified — ready for Phase 8 (Distribution)
 Resume file: None

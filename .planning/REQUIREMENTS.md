@@ -40,11 +40,11 @@ Requirements for FSKit pivot and distribution. Each maps to roadmap phases.
 
 ### App Integration
 
-- [ ] **APP-01**: MountClient replaces DaemonClient — invokes mount -F / umount for mount/unmount operations
-- [ ] **APP-02**: App detects mount status (mounted/unmounted) and reflects it in the status bar UI
-- [ ] **APP-03**: First-launch onboarding detects if FSKit extension is enabled and guides user to System Settings if not
-- [ ] **APP-04**: Menu bar UI updated — macFUSE references removed, status indicators updated for FSKit
-- [ ] **APP-05**: App-side B2Client for bucket listing during credential setup in Settings
+- [x] **APP-01**: MountClient replaces DaemonClient — invokes mount -F / umount for mount/unmount operations
+- [x] **APP-02**: App detects mount status (mounted/unmounted) and reflects it in the status bar UI
+- [x] **APP-03**: First-launch onboarding detects if FSKit extension is enabled and guides user to System Settings if not
+- [x] **APP-04**: Menu bar UI updated — macFUSE references removed, status indicators updated for FSKit
+- [x] **APP-05**: App-side B2Client for bucket listing during credential setup in Settings
 
 ### Packaging
 
@@ -126,11 +126,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FSKIT-05 | Phase 6 | Complete |
 | FSKIT-06 | Phase 6 | Complete |
 | FSKIT-07 | Phase 6 | Complete |
-| APP-01 | Phase 7 | Pending |
-| APP-02 | Phase 7 | Pending |
-| APP-03 | Phase 7 | Pending |
-| APP-04 | Phase 7 | Pending |
-| APP-05 | Phase 7 | Pending |
+| APP-01 | Phase 7 | Complete |
+| APP-02 | Phase 7 | Complete |
+| APP-03 | Phase 7 | Complete |
+| APP-04 | Phase 7 | Complete |
+| APP-05 | Phase 7 | Complete |
 | PKG-01 | Phase 8 | Pending |
 | PKG-02 | Phase 8 | Pending |
 | PKG-03 | Phase 8 | Pending |
@@ -151,4 +151,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-06 after Phase 6 completion*
+*Last updated: 2026-02-06 after Phase 7 completion*
