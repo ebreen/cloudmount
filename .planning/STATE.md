@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Users can mount cloud storage buckets as local drives and access them seamlessly in Finder with a beautiful status bar interface for management.
-**Current focus:** Phase 6 complete, verified — ready for Phase 7 (App Integration)
+**Current focus:** Phase 7 (App Integration) — wiring mount orchestration and UI
 
 ## Current Position
 
-Phase: 6 of 8 (FSKit Filesystem)
-Plan: 4 of 4 in current phase
-Status: Phase complete (verified: 5/5 must-haves passed, human testing deferred to Phase 7)
-Last activity: 2026-02-06 — Phase 6 verified
+Phase: 7 of 8 (App Integration)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-06 — Completed 07-01-PLAN.md
 
-Progress: [████████████████░░░░] 77% (23/~30 plans — v1.0 complete, v2.0 in progress)
+Progress: [████████████████░░░░] 80% (24/~30 plans — v1.0 complete, v2.0 in progress)
 
 ## What's Complete
 
@@ -34,13 +34,14 @@ Progress: [████████████████░░░░] 77% (23
 - [x] Phase 6 Plan 2: Extension entry point + FileSystem lifecycle + B2Volume shell
 - [x] Phase 6 Plan 3: Volume operations (lookup, enumerate, create, remove, rename, attributes)
 - [x] Phase 6 Plan 4: File I/O operations (open/read/write/close)
+- [x] Phase 7 Plan 1: MountClient + MountMonitor + ExtensionDetector (infrastructure)
 
 See: .planning/milestones/v1.0-ROADMAP.md
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 23
+- Total plans completed: 24
 - Average duration: —
 - Total execution time: —
 
@@ -54,6 +55,7 @@ See: .planning/milestones/v1.0-ROADMAP.md
 | 4. Configuration & Polish | 2 | — | — |
 | 5. Build System & B2 Client | 5/5 | 20min | 4.0min |
 | 6. FSKit Filesystem | 4/4 | 40min | 10.0min |
+| 7. App Integration | 1/2 | 2min | 2.0min |
 
 *Updated after each plan completion*
 
@@ -85,6 +87,10 @@ Recent decisions affecting current work:
 - FSItem.ItemType.file (not .regular) for regular file attributes in FSKit V2
 - Upload on final close only (modes.isEmpty); failure keeps isDirty for retry
 - FSMutableFileDataBuffer.withUnsafeMutableBytes for zero-copy read into kernel buffer
+- URLComponents for b2:// URL construction in MountClient — proper encoding, no escaping bugs
+- diskutil unmount preferred over umount — more graceful, handles busy volumes
+- stat() device ID comparison for mount detection — reliable, no polling
+- withCheckedThrowingContinuation + terminationHandler for non-blocking Process execution
 
 ### Blockers/Concerns
 
@@ -98,6 +104,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06T22:00:00Z
-Stopped at: Phase 6 verified and complete — ready for Phase 7
+Last session: 2026-02-06T10:54:02Z
+Stopped at: Completed 07-01-PLAN.md — ready for 07-02
 Resume file: None

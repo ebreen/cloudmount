@@ -83,7 +83,7 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — MountClient + MountMonitor + ExtensionDetector (infrastructure)
+- [x] 07-01-PLAN.md — MountClient + MountMonitor + ExtensionDetector (infrastructure)
 - [ ] 07-02-PLAN.md — Wire AppState, MenuContentView, OnboardingView (UI integration)
 
 ### Phase 8: Distribution
@@ -116,5 +116,5 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 4. Configuration & Polish | v1.0 | 2/2 | Complete | 2026-02-03 |
 | 5. Build System & B2 Client | v2.0 | 5/5 | Complete | 2026-02-05 |
 | 6. FSKit Filesystem | v2.0 | 4/4 | Complete | 2026-02-06 |
-| 7. App Integration | v2.0 | 0/2 | Not started | - |
+| 7. App Integration | v2.0 | 1/2 | In progress | - |
 | 8. Distribution | v2.0 | 0/TBD | Not started | - |
