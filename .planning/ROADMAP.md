@@ -116,5 +116,5 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 4. Configuration & Polish | v1.0 | 2/2 | Complete | 2026-02-03 |
 | 5. Build System & B2 Client | v2.0 | 5/5 | Complete | 2026-02-05 |
 | 6. FSKit Filesystem | v2.0 | 4/4 | Complete | 2026-02-06 |
-| 7. App Integration | v2.0 | 0/TBD | Not started | - |
+| 7. App Integration | v2.0 | 0/2 | Not started | - |
 | 8. Distribution | v2.0 | 0/TBD | Not started | - |
