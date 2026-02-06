@@ -43,7 +43,7 @@ targets:
       - package: Sparkle
 
   CloudMountExtension:
-    type: app-extension
+    type: extensionkit-extension
     platform: macOS
     sources:
       - path: CloudMountExtension
@@ -55,7 +55,7 @@ targets:
         INFOPLIST_FILE: CloudMountExtension/Info.plist
         CODE_SIGN_ENTITLEMENTS: CloudMountExtension/CloudMountExtension.entitlements
         CODE_SIGN_STYLE: Automatic
-        GENERATE_INFOPLIST_FILE: false
+        GENERATE_INFOPLIST_FILE: true
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
     dependencies:
       - target: CloudMountKit
