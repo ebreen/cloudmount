@@ -97,13 +97,22 @@ jobs:
           SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          # Make our keychain visible and default for exportArchive
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
           security default-keychain -s "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH" /Library/Keychains/System.keychain
 
-          # Debug: verify certificate is accessible
+          # Verify the correct certificate type is present
+          echo "Checking for Developer ID Application certificate..."
+          if ! security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -q "Developer ID Application"; then
+            echo "::error::BUILD_CERTIFICATE_BASE64 does not contain a Developer ID Application certificate."
+            echo "Found identities:"
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+            echo ""
+            echo "Export your 'Developer ID Application' cert from Keychain Access as .p12,"
+            echo "base64-encode it, and update the BUILD_CERTIFICATE_BASE64 secret."
+            exit 1
+          fi
           security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
           EXPORT_PLIST="$RUNNER_TEMP/export-options.plist"
