@@ -1,0 +1,255 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  build-sign-notarize:
+    runs-on: macos-26
+    timeout-minutes: 60
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      dmg-name: ${{ steps.version.outputs.dmg-name }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "dmg-name=CloudMount-${VERSION}.dmg" >> "$GITHUB_OUTPUT"
+
+      - name: Install tools
+        run: brew install create-dmg xcodegen
+
+      - name: Import code signing certificate
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          # CRITICAL: Without this, codesign cannot access the certificate
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Set version in Info.plist
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" CloudMount/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" CloudMountExtension/Info.plist
+          # Use run number as build number for monotonic increment
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" CloudMount/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" CloudMountExtension/Info.plist
+
+      - name: Archive
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcodebuild archive \
+            -project CloudMount.xcodeproj \
+            -scheme CloudMount \
+            -archivePath "$RUNNER_TEMP/CloudMount.xcarchive" \
+            -configuration Release \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_IDENTITY="Developer ID Application"
+
+      - name: Export archive
+        env:
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # Inject teamID into export options
+          EXPORT_PLIST="$RUNNER_TEMP/export-options.plist"
+          cp scripts/export-options.plist "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" "$EXPORT_PLIST"
+
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/CloudMount.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$EXPORT_PLIST"
+
+      - name: Verify code signature
+        run: |
+          codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/export/CloudMount.app"
+          codesign -d --entitlements :- "$RUNNER_TEMP/export/CloudMount.app/Contents/PlugIns/CloudMountExtension.appex"
+
+      - name: Create DMG
+        run: |
+          chmod +x scripts/create-dmg.sh
+          ./scripts/create-dmg.sh \
+            "$RUNNER_TEMP/export/CloudMount.app" \
+            "${{ steps.version.outputs.version }}" \
+            "$RUNNER_TEMP/dist"
+
+      - name: Notarize DMG
+        env:
+          APP_STORE_CONNECT_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
+          API_KEY_ID: ${{ secrets.API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.API_ISSUER_ID }}
+        run: |
+          echo -n "$APP_STORE_CONNECT_KEY_BASE64" | base64 --decode -o "$RUNNER_TEMP/AuthKey.p8"
+
+          xcrun notarytool submit \
+            "$RUNNER_TEMP/dist/${{ steps.version.outputs.dmg-name }}" \
+            --key "$RUNNER_TEMP/AuthKey.p8" \
+            --key-id "$API_KEY_ID" \
+            --issuer "$API_ISSUER_ID" \
+            --wait \
+            --timeout 30m
+
+          xcrun stapler staple "$RUNNER_TEMP/dist/${{ steps.version.outputs.dmg-name }}"
+
+      - name: Verify notarization
+        run: |
+          xcrun stapler validate "$RUNNER_TEMP/dist/${{ steps.version.outputs.dmg-name }}"
+
+      - name: Generate checksum
+        run: |
+          cd "$RUNNER_TEMP/dist"
+          shasum -a 256 "${{ steps.version.outputs.dmg-name }}" > "${{ steps.version.outputs.dmg-name }}.sha256"
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: |
+            ${{ runner.temp }}/dist/${{ steps.version.outputs.dmg-name }}
+            ${{ runner.temp }}/dist/${{ steps.version.outputs.dmg-name }}.sha256
+          retention-days: 5
+
+      - name: Clean up keychain
+        if: ${{ always() }}
+        run: |
+          security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" 2>/dev/null || true
+          rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/build_certificate.p12"
+
+  publish:
+    needs: build-sign-notarize
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: dist
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: CloudMount ${{ needs.build-sign-notarize.outputs.version }}
+          files: |
+            dist/${{ needs.build-sign-notarize.outputs.dmg-name }}
+            dist/${{ needs.build-sign-notarize.outputs.dmg-name }}.sha256
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+          body: |
+            ## CloudMount ${{ needs.build-sign-notarize.outputs.version }}
+
+            ### Installation
+
+            **Download:** `${{ needs.build-sign-notarize.outputs.dmg-name }}` - open the DMG and drag CloudMount to Applications.
+
+            **Homebrew:** `brew install eirikbreen/cloudmount/cloudmount`
+
+            ### Requirements
+
+            - macOS 26 (Tahoe) or later
+            - Enable the FSKit extension in System Settings -> General -> Login Items & Extensions
+
+            ### Checksums
+
+            SHA-256 checksum available in `${{ needs.build-sign-notarize.outputs.dmg-name }}.sha256`
+
+  bump-cask:
+    needs: [build-sign-notarize, publish]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download checksum
+        uses: actions/download-artifact@v4
+        with:
+          name: release-assets
+          path: dist
+
+      - name: Bump Homebrew Cask
+        env:
+          TAP_GITHUB_TOKEN: ${{ secrets.TAP_GITHUB_TOKEN }}
+          VERSION: ${{ needs.build-sign-notarize.outputs.version }}
+          DMG_NAME: ${{ needs.build-sign-notarize.outputs.dmg-name }}
+        run: |
+          SHA256=$(awk '{print $1}' "dist/${DMG_NAME}.sha256")
+
+          git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/eirikbreen/homebrew-cloudmount.git" tap
+          cd tap
+
+          cat > Casks/cloudmount.rb << CASK
+          cask "cloudmount" do
+            version "${VERSION}"
+            sha256 "${SHA256}"
+
+            url "https://github.com/eirikbreen/cloudmount/releases/download/v#{version}/CloudMount-#{version}.dmg"
+            name "CloudMount"
+            desc "Mount cloud storage as native macOS volumes via FSKit"
+            homepage "https://github.com/eirikbreen/cloudmount"
+
+            livecheck do
+              url :url
+              strategy :github_latest
+            end
+
+            auto_updates true
+            depends_on macos: ">= :tahoe"
+
+            app "CloudMount.app"
+
+            zap trash: [
+              "~/Library/Application Support/com.cloudmount.app",
+              "~/Library/Caches/com.cloudmount.app",
+              "~/Library/HTTPStorages/com.cloudmount.app",
+              "~/Library/Preferences/com.cloudmount.app.plist",
+              "~/Library/Saved Application State/com.cloudmount.app.savedState",
+            ]
+
+            caveats <<~EOS
+              CloudMount requires macOS 26 (Tahoe) or later.
+
+              After installation, enable the FSKit extension:
+                System Settings -> General -> Login Items & Extensions -> CloudMount
+
+              Mount a volume:  Use the CloudMount menu bar app, or run: mount -t b2 b2://bucket /mount/point
+              Unmount:          Use the menu bar app, or run: diskutil unmount /mount/point
+
+              For help: https://github.com/eirikbreen/cloudmount
+            EOS
+          end
+          CASK
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/cloudmount.rb
+          git commit -m "bump cloudmount to ${VERSION}"
+          git push
