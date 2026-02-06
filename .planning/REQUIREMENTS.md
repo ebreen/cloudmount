@@ -17,13 +17,13 @@ Requirements for FSKit pivot and distribution. Each maps to roadmap phases.
 
 ### FSKit Filesystem
 
-- [ ] **FSKIT-01**: FSUnaryFileSystem subclass handles probe/load/unload lifecycle for B2 bucket resources
-- [ ] **FSKIT-02**: FSVolume subclass implements lookup, enumerate directory, create item, remove item, rename item, get/set attributes, reclaim, and synchronize
-- [ ] **FSKIT-03**: FSVolume.ReadWriteOperations implemented — read downloads from B2 (with local cache), write buffers locally
-- [ ] **FSKIT-04**: FSVolume.OpenCloseOperations implemented — write-on-close uploads dirty files to B2
-- [ ] **FSKIT-05**: Volume statistics (statfs) returns meaningful values for mounted bucket
-- [ ] **FSKIT-06**: macOS metadata files suppressed (.DS_Store, .Spotlight-V100, ._ files) to reduce B2 API calls
-- [ ] **FSKIT-07**: User can mount a B2 bucket via the app and browse it in Finder as a local volume
+- [x] **FSKIT-01**: FSUnaryFileSystem subclass handles probe/load/unload lifecycle for B2 bucket resources
+- [x] **FSKIT-02**: FSVolume subclass implements lookup, enumerate directory, create item, remove item, rename item, get/set attributes, reclaim, and synchronize
+- [x] **FSKIT-03**: FSVolume.ReadWriteOperations implemented — read downloads from B2 (with local cache), write buffers locally
+- [x] **FSKIT-04**: FSVolume.OpenCloseOperations implemented — write-on-close uploads dirty files to B2
+- [x] **FSKIT-05**: Volume statistics (statfs) returns meaningful values for mounted bucket
+- [x] **FSKIT-06**: macOS metadata files suppressed (.DS_Store, .Spotlight-V100, ._ files) to reduce B2 API calls
+- [x] **FSKIT-07**: User can mount a B2 bucket via the app and browse it in Finder as a local volume
 
 ### B2 API Client (Swift)
 
@@ -119,13 +119,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | B2-08 | Phase 5 | Complete |
 | B2-09 | Phase 5 | Complete |
 | B2-10 | Phase 5 | Complete |
-| FSKIT-01 | Phase 6 | Pending |
-| FSKIT-02 | Phase 6 | Pending |
-| FSKIT-03 | Phase 6 | Pending |
-| FSKIT-04 | Phase 6 | Pending |
-| FSKIT-05 | Phase 6 | Pending |
-| FSKIT-06 | Phase 6 | Pending |
-| FSKIT-07 | Phase 6 | Pending |
+| FSKIT-01 | Phase 6 | Complete |
+| FSKIT-02 | Phase 6 | Complete |
+| FSKIT-03 | Phase 6 | Complete |
+| FSKIT-04 | Phase 6 | Complete |
+| FSKIT-05 | Phase 6 | Complete |
+| FSKIT-06 | Phase 6 | Complete |
+| FSKIT-07 | Phase 6 | Complete |
 | APP-01 | Phase 7 | Pending |
 | APP-02 | Phase 7 | Pending |
 | APP-03 | Phase 7 | Pending |
@@ -151,4 +151,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-05 after Phase 5 completion*
+*Last updated: 2026-02-06 after Phase 6 completion*
