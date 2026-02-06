@@ -47,6 +47,15 @@ jobs:
           security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security list-keychain -d user -s "$KEYCHAIN_PATH"
 
+      - name: Install provisioning profiles
+        env:
+          APP_PROFILE_BASE64: ${{ secrets.APP_PROVISION_PROFILE_BASE64 }}
+          EXT_PROFILE_BASE64: ${{ secrets.EXT_PROVISION_PROFILE_BASE64 }}
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo -n "$APP_PROFILE_BASE64" | base64 --decode -o ~/Library/MobileDevice/Provisioning\ Profiles/CloudMount.provisionprofile
+          echo -n "$EXT_PROFILE_BASE64" | base64 --decode -o ~/Library/MobileDevice/Provisioning\ Profiles/CloudMountExtension.provisionprofile
+
       - name: Generate Xcode project
         run: xcodegen generate
 
@@ -68,41 +77,47 @@ jobs:
       - name: Archive
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          API_KEY_ID: ${{ secrets.API_KEY_ID }}
-          API_ISSUER_ID: ${{ secrets.API_ISSUER_ID }}
+          SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
           xcodebuild archive \
             -project CloudMount.xcodeproj \
             -scheme CloudMount \
             -archivePath "$RUNNER_TEMP/CloudMount.xcarchive" \
             -configuration Release \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
-            -authenticationKeyID "$API_KEY_ID" \
-            -authenticationKeyIssuerID "$API_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$TEAM_ID"
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
+            PROVISIONING_PROFILE_SPECIFIER=""
 
       - name: Export archive
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          API_KEY_ID: ${{ secrets.API_KEY_ID }}
-          API_ISSUER_ID: ${{ secrets.API_ISSUER_ID }}
         run: |
           EXPORT_PLIST="$RUNNER_TEMP/export-options.plist"
-          cp scripts/export-options.plist "$EXPORT_PLIST"
+          cat > "$EXPORT_PLIST" << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>developer-id</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+          </dict>
+          </plist>
+          EOF
+
           /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" "$EXPORT_PLIST"
-          /usr/libexec/PlistBuddy -c "Set :signingStyle automatic" "$EXPORT_PLIST"
           /usr/libexec/PlistBuddy -c "Add :signingCertificate string $SIGNING_IDENTITY" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:com.cloudmount.app string CloudMount Developer ID" "$EXPORT_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:com.cloudmount.app.extension string CloudMount Extension Developer ID" "$EXPORT_PLIST"
 
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/CloudMount.xcarchive" \
             -exportPath "$RUNNER_TEMP/export" \
-            -exportOptionsPlist "$EXPORT_PLIST" \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
-            -authenticationKeyID "$API_KEY_ID" \
-            -authenticationKeyIssuerID "$API_ISSUER_ID"
+            -exportOptionsPlist "$EXPORT_PLIST"
 
       - name: Verify code signature
         run: |
@@ -158,6 +173,7 @@ jobs:
         run: |
           security delete-keychain "$RUNNER_TEMP/app-signing.keychain-db" 2>/dev/null || true
           rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/build_certificate.p12"
+          rm -rf ~/Library/MobileDevice/Provisioning\ Profiles
 
   publish:
     needs: build-sign-notarize
