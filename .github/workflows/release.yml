@@ -162,13 +162,25 @@ jobs:
         run: |
           echo -n "$APP_STORE_CONNECT_KEY_BASE64" | base64 --decode -o "$RUNNER_TEMP/AuthKey.p8"
 
-          xcrun notarytool submit \
+          SUBMISSION_OUT=$(xcrun notarytool submit \
             "$RUNNER_TEMP/dist/${{ steps.version.outputs.dmg-name }}" \
             --key "$RUNNER_TEMP/AuthKey.p8" \
             --key-id "$API_KEY_ID" \
             --issuer "$API_ISSUER_ID" \
             --wait \
-            --timeout 30m
+            --timeout 30m 2>&1) || true
+          echo "$SUBMISSION_OUT"
+
+          # Extract submission ID and fetch log if notarization failed
+          SUBMISSION_ID=$(echo "$SUBMISSION_OUT" | grep "id:" | head -1 | awk '{print $2}')
+          if echo "$SUBMISSION_OUT" | grep -q "status: Invalid"; then
+            echo "::error::Notarization failed. Fetching detailed log..."
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --key "$RUNNER_TEMP/AuthKey.p8" \
+              --key-id "$API_KEY_ID" \
+              --issuer "$API_ISSUER_ID"
+            exit 1
+          fi
 
           xcrun stapler staple "$RUNNER_TEMP/dist/${{ steps.version.outputs.dmg-name }}"
 
