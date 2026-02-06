@@ -5,11 +5,17 @@ import CloudMountKit
 struct CloudMountApp: App {
     @StateObject private var appState = AppState()
     @Environment(\.openWindow) private var openWindow
+    @State private var hasStartedMonitoring = false
     
     var body: some Scene {
         MenuBarExtra {
             MenuContentView()
                 .environmentObject(appState)
+                .onAppear {
+                    guard !hasStartedMonitoring else { return }
+                    hasStartedMonitoring = true
+                    appState.startMonitoring()
+                }
         } label: {
             Image(systemName: "externaldrive.fill.badge.icloud")
                 .symbolRenderingMode(.hierarchical)

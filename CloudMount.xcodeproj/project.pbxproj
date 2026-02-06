@@ -16,6 +16,7 @@
 		32BC36263CA0C2C03AC70CA2 /* CredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720D24C3E178CA03724457FC /* CredentialStore.swift */; };
 		3640B8C10A96787ACCD23A98 /* CloudMountApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 245352CBCDD999B011797180 /* CloudMountApp.swift */; };
 		3D5DAA7E3336BE32703BFF37 /* CloudMountKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 7D5B0B4FE612455B8C71C655 /* CloudMountKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		44126C97880A8573F66C7A9D /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA0106A93214526FF15BA322 /* OnboardingView.swift */; };
 		45ADD57E45601833AD9A03C7 /* MetadataBlocklist.swift in Sources */ = {isa = PBXBuildFile; fileRef = 257F743448AA73718FA3B3E0 /* MetadataBlocklist.swift */; };
 		54A3F8C67A3404A6376BB4B1 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3788726E2E79EA78AFA73FA /* AppState.swift */; };
 		64BAF7C2134A77C86CE04A98 /* CloudMountKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F7BEF9119DCC2176BEED910 /* CloudMountKit.framework */; };
@@ -118,6 +119,7 @@
 		B3788726E2E79EA78AFA73FA /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		B7A2C373BFE3870E87CF3EB4 /* CloudMountExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudMountExtension.swift; sourceTree = "<group>"; };
 		B9C31923BE4C26C839337F84 /* CloudMountFileSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudMountFileSystem.swift; sourceTree = "<group>"; };
+		DA0106A93214526FF15BA322 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		DBA67E3896527250CFC0F8E8 /* B2Client.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2Client.swift; sourceTree = "<group>"; };
 		DC2324CD292FFD9B3F40A01F /* AccountConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountConfig.swift; sourceTree = "<group>"; };
 		DF70B2D69F4291D0EEECF41E /* B2VolumeOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2VolumeOperations.swift; sourceTree = "<group>"; };
@@ -235,6 +237,7 @@
 			isa = PBXGroup;
 			children = (
 				5A482CA13FB69BC52FD66AD5 /* MenuContentView.swift */,
+				DA0106A93214526FF15BA322 /* OnboardingView.swift */,
 				A6433486524D4D5416F1B90E /* SettingsView.swift */,
 			);
 			path = Views;
@@ -384,6 +387,7 @@
 				C7D887436E1C3D3CA083F27C /* MenuContentView.swift in Sources */,
 				B5F204DBB89506EE7B55EFD9 /* MountClient.swift in Sources */,
 				CD3722E0054EF65F9D77EC65 /* MountMonitor.swift in Sources */,
+				44126C97880A8573F66C7A9D /* OnboardingView.swift in Sources */,
 				049E5BC55DDD5F9242BA83FF /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

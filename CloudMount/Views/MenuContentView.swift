@@ -44,6 +44,10 @@ struct MenuContentView: View {
         }
         .padding(12)
         .frame(width: 280)
+        .sheet(isPresented: $appState.showOnboarding) {
+            OnboardingView()
+                .environmentObject(appState)
+        }
     }
     
     private var headerSection: some View {
