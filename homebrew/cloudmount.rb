@@ -2,10 +2,10 @@ cask "cloudmount" do
   version "2.0.0"
   sha256 "PLACEHOLDER_SHA256"
 
-  url "https://github.com/eirikbreen/cloudmount/releases/download/v#{version}/CloudMount-#{version}.dmg"
+  url "https://github.com/ebreen/cloudmount/releases/download/v#{version}/CloudMount-#{version}.dmg"
   name "CloudMount"
   desc "Mount cloud storage as native macOS volumes via FSKit"
-  homepage "https://github.com/eirikbreen/cloudmount"
+  homepage "https://github.com/ebreen/cloudmount"
 
   livecheck do
     url :url
@@ -34,6 +34,6 @@ cask "cloudmount" do
     Mount a volume:  Use the CloudMount menu bar app, or run: mount -t b2 b2://bucket /mount/point
     Unmount:          Use the menu bar app, or run: diskutil unmount /mount/point
 
-    For help: https://github.com/eirikbreen/cloudmount
+    For help: https://github.com/ebreen/cloudmount
   EOS
 end

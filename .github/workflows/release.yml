@@ -175,7 +175,7 @@ jobs:
 
             **Download:** `${{ needs.build-sign-notarize.outputs.dmg-name }}` - open the DMG and drag CloudMount to Applications.
 
-            **Homebrew:** `brew install eirikbreen/cloudmount/cloudmount`
+            **Homebrew:** `brew install ebreen/cloudmount/cloudmount`
 
             ### Requirements
 
@@ -206,7 +206,7 @@ jobs:
         run: |
           SHA256=$(awk '{print $1}' "dist/${DMG_NAME}.sha256")
 
-          git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/eirikbreen/homebrew-cloudmount.git" tap
+          git clone "https://x-access-token:${TAP_GITHUB_TOKEN}@github.com/ebreen/homebrew-cloudmount.git" tap
           cd tap
 
           cat > Casks/cloudmount.rb << CASK
@@ -214,10 +214,10 @@ jobs:
             version "${VERSION}"
             sha256 "${SHA256}"
 
-            url "https://github.com/eirikbreen/cloudmount/releases/download/v#{version}/CloudMount-#{version}.dmg"
+            url "https://github.com/ebreen/cloudmount/releases/download/v#{version}/CloudMount-#{version}.dmg"
             name "CloudMount"
             desc "Mount cloud storage as native macOS volumes via FSKit"
-            homepage "https://github.com/eirikbreen/cloudmount"
+            homepage "https://github.com/ebreen/cloudmount"
 
             livecheck do
               url :url
@@ -246,7 +246,7 @@ jobs:
               Mount a volume:  Use the CloudMount menu bar app, or run: mount -t b2 b2://bucket /mount/point
               Unmount:          Use the menu bar app, or run: diskutil unmount /mount/point
 
-              For help: https://github.com/eirikbreen/cloudmount
+              For help: https://github.com/ebreen/cloudmount
             EOS
           end
           CASK

@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
     <title>CloudMount Updates</title>
-    <link>https://github.com/eirikbreen/cloudmount</link>
+    <link>https://github.com/ebreen/cloudmount</link>
     <description>Appcast feed for CloudMount auto-updates</description>
     <language>en</language>
     <!-- Release entries will be added by generate_appcast during CI release -->
