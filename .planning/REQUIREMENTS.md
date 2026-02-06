@@ -48,24 +48,24 @@ Requirements for FSKit pivot and distribution. Each maps to roadmap phases.
 
 ### Packaging
 
-- [ ] **PKG-01**: App bundle is code-signed with Developer ID Application certificate and hardened runtime
-- [ ] **PKG-02**: App bundle is notarized via xcrun notarytool and stapled
-- [ ] **PKG-03**: .dmg disk image created with Applications symlink for drag-to-install
-- [ ] **PKG-04**: App has proper bundle identifier, version number in Info.plist, and app icon
-- [ ] **PKG-05**: Sparkle auto-update framework integrated — checks GitHub Releases for updates
+- [x] **PKG-01**: App bundle is code-signed with Developer ID Application certificate and hardened runtime
+- [x] **PKG-02**: App bundle is notarized via xcrun notarytool and stapled
+- [x] **PKG-03**: .dmg disk image created with Applications symlink for drag-to-install
+- [x] **PKG-04**: App has proper bundle identifier, version number in Info.plist, and app icon
+- [x] **PKG-05**: Sparkle auto-update framework integrated — checks GitHub Releases for updates
 
 ### Homebrew
 
-- [ ] **BREW-01**: Homebrew Cask formula in own tap (homebrew-cloudmount) with version, sha256, app stanza
-- [ ] **BREW-02**: Cask includes depends_on macos constraint, caveats about FSKit extension enablement, and zap stanza
-- [ ] **BREW-03**: Cask includes livecheck stanza pointing to GitHub Releases for auto-detection of new versions
+- [x] **BREW-01**: Homebrew Cask formula in own tap (homebrew-cloudmount) with version, sha256, app stanza
+- [x] **BREW-02**: Cask includes depends_on macos constraint, caveats about FSKit extension enablement, and zap stanza
+- [x] **BREW-03**: Cask includes livecheck stanza pointing to GitHub Releases for auto-detection of new versions
 
 ### CI/CD
 
-- [ ] **CI-01**: GitHub Actions workflow runs build + test on every pull request
-- [ ] **CI-02**: Tag-triggered release workflow: build → sign → notarize → create DMG → upload to GitHub Release
-- [ ] **CI-03**: Code signing in CI uses imported certificate from GitHub Secrets (dedicated keychain, proper partition list)
-- [ ] **CI-04**: Automated Homebrew Cask version bump after successful release (update sha256 + version in tap)
+- [x] **CI-01**: GitHub Actions workflow runs build + test on every pull request
+- [x] **CI-02**: Tag-triggered release workflow: build → sign → notarize → create DMG → upload to GitHub Release
+- [x] **CI-03**: Code signing in CI uses imported certificate from GitHub Secrets (dedicated keychain, proper partition list)
+- [x] **CI-04**: Automated Homebrew Cask version bump after successful release (update sha256 + version in tap)
 
 ## Future Requirements
 
@@ -131,18 +131,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | APP-03 | Phase 7 | Complete |
 | APP-04 | Phase 7 | Complete |
 | APP-05 | Phase 7 | Complete |
-| PKG-01 | Phase 8 | Pending |
-| PKG-02 | Phase 8 | Pending |
-| PKG-03 | Phase 8 | Pending |
-| PKG-04 | Phase 8 | Pending |
-| PKG-05 | Phase 8 | Pending |
-| BREW-01 | Phase 8 | Pending |
-| BREW-02 | Phase 8 | Pending |
-| BREW-03 | Phase 8 | Pending |
-| CI-01 | Phase 8 | Pending |
-| CI-02 | Phase 8 | Pending |
-| CI-03 | Phase 8 | Pending |
-| CI-04 | Phase 8 | Pending |
+| PKG-01 | Phase 8 | Complete |
+| PKG-02 | Phase 8 | Complete |
+| PKG-03 | Phase 8 | Complete |
+| PKG-04 | Phase 8 | Complete |
+| PKG-05 | Phase 8 | Complete |
+| BREW-01 | Phase 8 | Complete |
+| BREW-02 | Phase 8 | Complete |
+| BREW-03 | Phase 8 | Complete |
+| CI-01 | Phase 8 | Complete |
+| CI-02 | Phase 8 | Complete |
+| CI-03 | Phase 8 | Complete |
+| CI-04 | Phase 8 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 39 total
@@ -151,4 +151,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-05*
-*Last updated: 2026-02-06 after Phase 7 completion*
+*Last updated: 2026-02-06 after Phase 8 completion*

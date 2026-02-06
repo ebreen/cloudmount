@@ -3,7 +3,7 @@
 ## Milestones
 
 - ✅ **v1.0 MVP** - Phases 1-4 (shipped 2026-02-05)
-- 🚧 **v2.0 FSKit Pivot & Distribution** - Phases 5-8 (in progress)
+- ✅ **v2.0 FSKit Pivot & Distribution** - Phases 5-8 (shipped 2026-02-06)
 
 ## Phases
 
@@ -19,7 +19,7 @@ See: .planning/milestones/v1.0-ROADMAP.md for full details.
 
 </details>
 
-### 🚧 v2.0 FSKit Pivot & Distribution (In Progress)
+### ✅ v2.0 FSKit Pivot & Distribution (Shipped 2026-02-06)
 
 **Milestone Goal:** Replace Rust FUSE daemon with Apple's FSKit framework for a pure-Swift architecture, then package and distribute via GitHub Releases and Homebrew with CI/CD automation.
 
@@ -30,7 +30,7 @@ See: .planning/milestones/v1.0-ROADMAP.md for full details.
 - [x] **Phase 5: Build System & B2 Client** - Xcode project migration + Swift B2 API client
 - [x] **Phase 6: FSKit Filesystem** - FSKit extension with full volume operations wired to B2
 - [x] **Phase 7: App Integration** - Replace daemon with mount orchestration and update UI
-- [ ] **Phase 8: Distribution** - Code signing, notarization, DMG, Homebrew Cask, CI/CD pipeline
+- [x] **Phase 8: Distribution** - Code signing, notarization, DMG, Homebrew Cask, CI/CD pipeline
 
 ## Phase Details
 
@@ -99,9 +99,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Sparkle auto-update integration + distribution config (project.yml, Info.plist, ExportOptions.plist)
-- [ ] 08-02-PLAN.md — CI/CD pipelines: PR checks (ci.yml) + release workflow (release.yml) + DMG script
-- [ ] 08-03-PLAN.md — Homebrew Cask formula template + Sparkle appcast.xml placeholder
+- [x] 08-01-PLAN.md — Sparkle auto-update integration + distribution config (project.yml, Info.plist, ExportOptions.plist)
+- [x] 08-02-PLAN.md — CI/CD pipelines: PR checks (ci.yml) + release workflow (release.yml) + DMG script
+- [x] 08-03-PLAN.md — Homebrew Cask formula template + Sparkle appcast.xml placeholder
 
 ## Progress
 
@@ -117,4 +117,4 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 5. Build System & B2 Client | v2.0 | 5/5 | Complete | 2026-02-05 |
 | 6. FSKit Filesystem | v2.0 | 4/4 | Complete | 2026-02-06 |
 | 7. App Integration | v2.0 | 2/2 | Complete | 2026-02-06 |
-| 8. Distribution | v2.0 | 0/3 | Not started | - |
+| 8. Distribution | v2.0 | 3/3 | Complete | 2026-02-06 |
