@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-05)
 
 **Core value:** Users can mount cloud storage buckets as local drives and access them seamlessly in Finder with a beautiful status bar interface for management.
-**Current focus:** Phase 7 verified ✓ — ready for Phase 8 (Distribution)
+**Current focus:** Phase 8 in progress — distribution pipeline implementation
 
 ## Current Position
 
 Phase: 8 of 8 (Distribution)
 Plan: 1 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-06 — Completed 08-03-PLAN.md
+Last activity: 2026-02-06 - Completed 08-01-PLAN.md
 
 Progress: [███████████████████░] 93% (26/28 plans — v1.0 complete, v2.0 in progress)
 
@@ -36,6 +36,7 @@ Progress: [███████████████████░] 93% (26
 - [x] Phase 6 Plan 4: File I/O operations (open/read/write/close)
 - [x] Phase 7 Plan 1: MountClient + MountMonitor + ExtensionDetector (infrastructure)
 - [x] Phase 7 Plan 2: AppState mount orchestration + MenuContentView wiring + OnboardingView (UI integration)
+- [x] Phase 8 Plan 1: Sparkle updater integration + export options distribution config
 - [x] Phase 8 Plan 3: Homebrew Cask formula template + Sparkle appcast placeholder
 
 See: .planning/milestones/v1.0-ROADMAP.md
@@ -98,6 +99,8 @@ Recent decisions affecting current work:
 - Combine sink on MountMonitor.$mountedPaths — detects external unmounts without polling
 - Homebrew Cask template includes `auto_updates true`, `:github_latest` livecheck, Tahoe minimum, concise caveats, and conservative zap
 - Sparkle feed source of truth is repo-root `appcast.xml` prepared as an empty RSS channel for CI release population
+- Sparkle wired via SPM + SPUStandardUpdaterController, with a Check for Updates command in app menu
+- Distribution config keeps signing secrets external (SUPublicEDKey placeholder, no teamID in export options)
 
 ### Blockers/Concerns
 
@@ -112,6 +115,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06T14:11:07Z
-Stopped at: Completed 08-03-PLAN.md
+Last session: 2026-02-06T14:11:08Z
+Stopped at: Completed 08-01-PLAN.md
 Resume file: None
