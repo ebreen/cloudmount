@@ -53,20 +53,10 @@ final class MountClient {
     func mount(_ config: MountConfiguration) async throws {
         let mountPoint = config.mountPoint
 
-        // Create mount point directory if needed
         logger.info("Mounting \(config.bucketName, privacy: .public) at \(mountPoint, privacy: .public)")
 
-        if !FileManager.default.fileExists(atPath: mountPoint) {
-            do {
-                try FileManager.default.createDirectory(
-                    atPath: mountPoint,
-                    withIntermediateDirectories: true
-                )
-            } catch {
-                logger.error("Failed to create mount point directory: \(error.localizedDescription, privacy: .public)")
-                throw MountError.mountPointCreationFailed
-            }
-        }
+        // Note: /Volumes/ is root-owned. The mount -F command creates the mount point
+        // internally with appropriate privileges — we don't need to pre-create it.
 
         // Build the b2:// resource URL using URLComponents for proper encoding
         var components = URLComponents()
@@ -88,7 +78,9 @@ final class MountClient {
 
         if result.exitCode != 0 {
             // Check for extension-not-enabled error patterns
-            if result.stderr.contains("not found") || result.stderr.contains("extensionKit") {
+            let stderrLower = result.stderr.lowercased()
+            if stderrLower.contains("not found") || stderrLower.contains("extensionkit")
+                || stderrLower.contains("invalid file system") || stderrLower.contains("unknown file system") {
                 logger.error("FSKit extension not enabled — mount stderr: \(result.stderr, privacy: .public)")
                 throw MountError.extensionNotEnabled
             }
