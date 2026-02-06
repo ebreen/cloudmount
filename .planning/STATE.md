@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 
 ## Current Position
 
-Phase: 7 of 8 (App Integration)
-Plan: 2 of 2 in current phase
-Status: Phase verified ✓
-Last activity: 2026-02-06 — Phase 7 verified (11/11 must-haves passed)
+Phase: 8 of 8 (Distribution)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-06 — Completed 08-03-PLAN.md
 
-Progress: [█████████████████░░░] 83% (25/~30 plans — v1.0 complete, v2.0 in progress)
+Progress: [███████████████████░] 93% (26/28 plans — v1.0 complete, v2.0 in progress)
 
 ## What's Complete
 
@@ -36,13 +36,14 @@ Progress: [█████████████████░░░] 83% (25
 - [x] Phase 6 Plan 4: File I/O operations (open/read/write/close)
 - [x] Phase 7 Plan 1: MountClient + MountMonitor + ExtensionDetector (infrastructure)
 - [x] Phase 7 Plan 2: AppState mount orchestration + MenuContentView wiring + OnboardingView (UI integration)
+- [x] Phase 8 Plan 3: Homebrew Cask formula template + Sparkle appcast placeholder
 
 See: .planning/milestones/v1.0-ROADMAP.md
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 25
+- Total plans completed: 26
 - Average duration: —
 - Total execution time: —
 
@@ -57,6 +58,7 @@ See: .planning/milestones/v1.0-ROADMAP.md
 | 5. Build System & B2 Client | 5/5 | 20min | 4.0min |
 | 6. FSKit Filesystem | 4/4 | 40min | 10.0min |
 | 7. App Integration | 2/2 | 12min | 6.0min |
+| 8. Distribution | 1/3 | 2min | 2.0min |
 
 *Updated after each plan completion*
 
@@ -94,6 +96,8 @@ Recent decisions affecting current work:
 - withCheckedThrowingContinuation + terminationHandler for non-blocking Process execution
 - Per-config MountStatus enum on AppState keyed by UUID — independent per-mount status tracking
 - Combine sink on MountMonitor.$mountedPaths — detects external unmounts without polling
+- Homebrew Cask template includes `auto_updates true`, `:github_latest` livecheck, Tahoe minimum, concise caveats, and conservative zap
+- Sparkle feed source of truth is repo-root `appcast.xml` prepared as an empty RSS channel for CI release population
 
 ### Blockers/Concerns
 
@@ -108,6 +112,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06
-Stopped at: Phase 7 verified — ready for Phase 8 (Distribution)
+Last session: 2026-02-06T14:11:07Z
+Stopped at: Completed 08-03-PLAN.md
 Resume file: None
