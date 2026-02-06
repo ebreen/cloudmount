@@ -97,10 +97,14 @@ jobs:
           SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          # Make our keychain the default so exportArchive finds the Developer ID cert
+          # Make our keychain visible and default for exportArchive
           KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
           security default-keychain -s "$KEYCHAIN_PATH"
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" /Library/Keychains/System.keychain
+
+          # Debug: verify certificate is accessible
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
           EXPORT_PLIST="$RUNNER_TEMP/export-options.plist"
           cat > "$EXPORT_PLIST" <<EOF
@@ -115,7 +119,7 @@ jobs:
             <key>signingStyle</key>
             <string>manual</string>
             <key>signingCertificate</key>
-            <string>${SIGNING_IDENTITY}</string>
+            <string>Developer ID Application</string>
             <key>provisioningProfiles</key>
             <dict>
               <key>com.cloudmount.app</key>
