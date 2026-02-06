@@ -144,7 +144,7 @@ jobs:
       - name: Verify code signature
         run: |
           codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/export/CloudMount.app"
-          codesign -d --entitlements :- "$RUNNER_TEMP/export/CloudMount.app/Contents/PlugIns/CloudMountExtension.appex"
+          codesign -d --entitlements :- "$RUNNER_TEMP/export/CloudMount.app/Contents/Extensions/CloudMountExtension.appex"
 
       - name: Create DMG
         run: |
