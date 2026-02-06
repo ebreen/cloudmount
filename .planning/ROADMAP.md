@@ -96,12 +96,12 @@ Plans:
   3. `brew install --cask cloudmount` from the project's tap installs the app with correct macos constraint, caveats, and zap stanza
   4. Pushing a version tag triggers automated build → sign → notarize → DMG → GitHub Release → Cask bump pipeline
   5. Pull requests run build + test checks automatically
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
-- [ ] 08-03: TBD
+- [ ] 08-01-PLAN.md — Sparkle auto-update integration + distribution config (project.yml, Info.plist, ExportOptions.plist)
+- [ ] 08-02-PLAN.md — CI/CD pipelines: PR checks (ci.yml) + release workflow (release.yml) + DMG script
+- [ ] 08-03-PLAN.md — Homebrew Cask formula template + Sparkle appcast.xml placeholder
 
 ## Progress
 
@@ -117,4 +117,4 @@ Phases execute in numeric order: 5 → 6 → 7 → 8
 | 5. Build System & B2 Client | v2.0 | 5/5 | Complete | 2026-02-05 |
 | 6. FSKit Filesystem | v2.0 | 4/4 | Complete | 2026-02-06 |
 | 7. App Integration | v2.0 | 2/2 | Complete | 2026-02-06 |
-| 8. Distribution | v2.0 | 0/TBD | Not started | - |
+| 8. Distribution | v2.0 | 0/3 | Not started | - |
