@@ -1,11 +1,21 @@
 import SwiftUI
 import CloudMountKit
+import Sparkle
 
 @main
 struct CloudMountApp: App {
     @StateObject private var appState = AppState()
     @Environment(\.openWindow) private var openWindow
     @State private var hasStartedMonitoring = false
+    private let updaterController: SPUStandardUpdaterController
+
+    init() {
+        updaterController = SPUStandardUpdaterController(
+            startingUpdater: true,
+            updaterDelegate: nil,
+            userDriverDelegate: nil
+        )
+    }
     
     var body: some Scene {
         MenuBarExtra {
@@ -32,5 +42,10 @@ struct CloudMountApp: App {
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
+        .commands {
+            CommandGroup(after: .appInfo) {
+                CheckForUpdatesView(updater: updaterController.updater)
+            }
+        }
     }
 }
