@@ -82,24 +82,26 @@ struct MenuContentView: View {
                     .padding(.vertical, 4)
             } else {
                 ForEach(appState.mountConfigs) { config in
-                    HStack {
-                        Image(systemName: "externaldrive.fill")
-                            .foregroundStyle(.blue)
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(config.bucketName)
-                                .font(.subheadline)
-                            Text(config.mountPoint)
+                    let status = appState.mountStatus(for: config)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack {
+                            mountIcon(for: status)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(config.bucketName)
+                                    .font(.subheadline)
+                                Text(config.mountPoint)
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            Spacer()
+                            mountButton(for: config, status: status)
+                        }
+                        if case .error(let message) = status {
+                            Text(message)
                                 .font(.caption2)
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(.red)
+                                .lineLimit(2)
                         }
-                        Spacer()
-                        // Mount/unmount — stubs for Phase 7
-                        Button("Mount") {
-                            appState.mount(config)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.mini)
-                        .disabled(true) // Enabled in Phase 7
                     }
                     .padding(.vertical, 2)
                 }
@@ -166,6 +168,53 @@ struct MenuContentView: View {
         .font(.subheadline)
     }
     
+    @ViewBuilder
+    private func mountIcon(for status: AppState.MountStatus) -> some View {
+        switch status {
+        case .mounted:
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.green)
+        case .mounting, .unmounting:
+            ProgressView()
+                .controlSize(.small)
+                .frame(width: 16, height: 16)
+        case .error:
+            Image(systemName: "xmark.circle.fill")
+                .foregroundStyle(.red)
+        case .unmounted:
+            Image(systemName: "externaldrive.fill")
+                .foregroundStyle(.blue)
+        }
+    }
+
+    @ViewBuilder
+    private func mountButton(for config: MountConfiguration, status: AppState.MountStatus) -> some View {
+        switch status {
+        case .unmounted, .error:
+            Button("Mount") {
+                appState.mount(config)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.mini)
+        case .mounted:
+            Button("Unmount") {
+                appState.unmount(config)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.mini)
+        case .mounting:
+            Button("Mounting…") {}
+                .buttonStyle(.bordered)
+                .controlSize(.mini)
+                .disabled(true)
+        case .unmounting:
+            Button("Unmounting…") {}
+                .buttonStyle(.bordered)
+                .controlSize(.mini)
+                .disabled(true)
+        }
+    }
+
     private func showAbout() {
         NSApplication.shared.orderFrontStandardAboutPanel(
             options: [

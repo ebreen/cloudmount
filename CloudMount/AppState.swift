@@ -1,3 +1,4 @@
+import Combine
 import SwiftUI
 import CloudMountKit
 
@@ -9,10 +10,27 @@ final class AppState: ObservableObject {
     @Published var mountConfigs: [MountConfiguration] = []
     @Published var lastError: String?
     @Published var isConnected: Bool = false
+    @Published var mountStatuses: [UUID: MountStatus] = [:]
+    @Published var showOnboarding = false
+
+    // MARK: - Mount Status
+
+    enum MountStatus: Equatable {
+        case unmounted
+        case mounting
+        case mounted
+        case unmounting
+        case error(String)
+    }
 
     // MARK: - Dependencies
 
     let sharedDefaults = SharedDefaults.shared
+    let mountClient = MountClient()
+    let mountMonitor = MountMonitor()
+    let extensionDetector = ExtensionDetector()
+
+    private var mountPathCancellable: AnyCancellable?
 
     // MARK: - Init
 
@@ -78,27 +96,100 @@ final class AppState: ObservableObject {
         sharedDefaults.saveMountConfigurations(mountConfigs)
     }
 
-    // MARK: - Mount/Unmount Stubs (Phase 7)
+    // MARK: - Mount/Unmount
 
-    /// Mount a configured bucket. Stub — wired in Phase 7.
+    /// Mount a configured bucket via the FSKit extension.
     func mount(_ config: MountConfiguration) {
-        lastError = "Mount not yet implemented (Phase 7)"
+        mountStatuses[config.id] = .mounting
+        lastError = nil
+
+        Task {
+            do {
+                try await mountClient.mount(config)
+                mountStatuses[config.id] = .mounted
+            } catch let error as MountError {
+                if case .extensionNotEnabled = error {
+                    showOnboarding = true
+                }
+                mountStatuses[config.id] = .error(error.localizedDescription)
+                lastError = error.localizedDescription
+            } catch {
+                mountStatuses[config.id] = .error(error.localizedDescription)
+                lastError = error.localizedDescription
+            }
+        }
     }
 
-    /// Unmount a mounted bucket. Stub — wired in Phase 7.
+    /// Unmount a mounted bucket.
     func unmount(_ config: MountConfiguration) {
-        lastError = "Unmount not yet implemented (Phase 7)"
+        mountStatuses[config.id] = .unmounting
+        lastError = nil
+
+        Task {
+            do {
+                try await mountClient.unmount(config)
+                mountStatuses[config.id] = .unmounted
+            } catch {
+                mountStatuses[config.id] = .error(error.localizedDescription)
+                lastError = error.localizedDescription
+            }
+        }
+    }
+
+    /// Get the current mount status for a configuration.
+    func mountStatus(for config: MountConfiguration) -> MountStatus {
+        mountStatuses[config.id] ?? .unmounted
+    }
+
+    // MARK: - Monitoring
+
+    /// Start mount monitoring, sync initial status, and check extension enablement.
+    func startMonitoring() {
+        mountMonitor.startMonitoring(configs: mountConfigs)
+
+        for config in mountConfigs {
+            if mountMonitor.isMounted(config) {
+                mountStatuses[config.id] = .mounted
+            }
+        }
+
+        mountPathCancellable = mountMonitor.$mountedPaths
+            .receive(on: RunLoop.main)
+            .sink { [weak self] mountedPaths in
+                guard let self else { return }
+                for config in self.mountConfigs {
+                    let isCurrentlyMounted = mountedPaths.contains(config.mountPoint)
+                    let currentStatus = self.mountStatuses[config.id] ?? .unmounted
+                    if isCurrentlyMounted && currentStatus != .mounted {
+                        self.mountStatuses[config.id] = .mounted
+                    } else if !isCurrentlyMounted && currentStatus == .mounted {
+                        self.mountStatuses[config.id] = .unmounted
+                    }
+                }
+            }
+
+        Task {
+            await extensionDetector.checkExtensionStatus()
+            if extensionDetector.needsSetup {
+                showOnboarding = true
+            }
+        }
     }
 
     // MARK: - Clear All
 
     /// Disconnect: remove all accounts, mount configs, and credentials.
     func clearAll() {
+        mountMonitor.stopMonitoring()
+        mountPathCancellable?.cancel()
+        mountPathCancellable = nil
+
         for account in accounts {
             try? CredentialStore.deleteAccount(id: account.id)
         }
         accounts = []
         mountConfigs = []
+        mountStatuses = [:]
         isConnected = false
         lastError = nil
         sharedDefaults.saveAccounts([])

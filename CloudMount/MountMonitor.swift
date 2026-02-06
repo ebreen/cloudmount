@@ -7,6 +7,7 @@
 //  which configured mount points are currently active.
 //
 
+import AppKit
 import CloudMountKit
 import Foundation
 import os

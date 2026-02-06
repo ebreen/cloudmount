@@ -7,6 +7,7 @@
 //  to query FSKit extension enablement status.
 //
 
+import AppKit
 import Foundation
 import os
 

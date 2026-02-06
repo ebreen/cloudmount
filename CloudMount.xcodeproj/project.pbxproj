@@ -12,6 +12,7 @@
 		257B8068E2E5A551C41C6BC0 /* B2ItemAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BFED09AA99EFB129D2C6788 /* B2ItemAttributes.swift */; };
 		2CE47C1946DCD7D424F86150 /* B2HTTPClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A162D99B7BED785A6802097C /* B2HTTPClient.swift */; };
 		2F6A5F4727B17100E5818618 /* MetadataCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80AD3A0B2839CDCB3BABD0E5 /* MetadataCache.swift */; };
+		323FC09767FB302B2654B8FD /* ExtensionDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2EA1356685E652644B99E8A /* ExtensionDetector.swift */; };
 		32BC36263CA0C2C03AC70CA2 /* CredentialStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720D24C3E178CA03724457FC /* CredentialStore.swift */; };
 		3640B8C10A96787ACCD23A98 /* CloudMountApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 245352CBCDD999B011797180 /* CloudMountApp.swift */; };
 		3D5DAA7E3336BE32703BFF37 /* CloudMountKit.h in Headers */ = {isa = PBXBuildFile; fileRef = 7D5B0B4FE612455B8C71C655 /* CloudMountKit.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -26,10 +27,12 @@
 		9D66187D47E121D7451784B3 /* B2Volume.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75125AF55CFF265B29F419C0 /* B2Volume.swift */; };
 		A1B11A900AED50B9A2FD93BE /* B2AuthManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2395CEA9F2CD28B3333B9295 /* B2AuthManager.swift */; };
 		AAC7092125C70D8CA31C4FC3 /* SharedDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 046C34EDDD1FE2A6002DB643 /* SharedDefaults.swift */; };
+		B5F204DBB89506EE7B55EFD9 /* MountClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A6262A5EA669F2E7EAC6CA6 /* MountClient.swift */; };
 		C0F76BDBDDD6CD516FDEF495 /* CloudMountKit.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 8F7BEF9119DCC2176BEED910 /* CloudMountKit.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		C2858478837398FC38FA133B /* B2VolumeOperations.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF70B2D69F4291D0EEECF41E /* B2VolumeOperations.swift */; };
 		C76E4648B5684964FE005359 /* FileCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = F199CE2CC481105CE8C647F5 /* FileCache.swift */; };
 		C7D887436E1C3D3CA083F27C /* MenuContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A482CA13FB69BC52FD66AD5 /* MenuContentView.swift */; };
+		CD3722E0054EF65F9D77EC65 /* MountMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AE794C490B60EA0AB609BA2 /* MountMonitor.swift */; };
 		CF4BF056946B223EAA77D1F1 /* B2Error.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BC29851CE3B4D28A86E4F17 /* B2Error.swift */; };
 		D9689270A634E287D3573F31 /* MountConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC8839B8E82811D074BA4C03 /* MountConfig.swift */; };
 		F6E77598E8334FCE352BF286 /* B2Item.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CCF895B99FA230CDA2702F5 /* B2Item.swift */; };
@@ -96,6 +99,7 @@
 		267CDB85D51E3FACEC897026 /* B2Types.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2Types.swift; sourceTree = "<group>"; };
 		2BFED09AA99EFB129D2C6788 /* B2ItemAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2ItemAttributes.swift; sourceTree = "<group>"; };
 		2EC990B42BB7C43B2B42AA23 /* B2VolumeReadWrite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2VolumeReadWrite.swift; sourceTree = "<group>"; };
+		3A6262A5EA669F2E7EAC6CA6 /* MountClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MountClient.swift; sourceTree = "<group>"; };
 		58F100E013EA0D11989456A8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5A482CA13FB69BC52FD66AD5 /* MenuContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuContentView.swift; sourceTree = "<group>"; };
 		6BC29851CE3B4D28A86E4F17 /* B2Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2Error.swift; sourceTree = "<group>"; };
@@ -105,6 +109,7 @@
 		7D495B85756E68677590429E /* CloudMount.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CloudMount.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7D5B0B4FE612455B8C71C655 /* CloudMountKit.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CloudMountKit.h; sourceTree = "<group>"; };
 		80AD3A0B2839CDCB3BABD0E5 /* MetadataCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataCache.swift; sourceTree = "<group>"; };
+		8AE794C490B60EA0AB609BA2 /* MountMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MountMonitor.swift; sourceTree = "<group>"; };
 		8F7BEF9119DCC2176BEED910 /* CloudMountKit.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = CloudMountKit.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		90CDC498A7E1835C11A197A1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A162D99B7BED785A6802097C /* B2HTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2HTTPClient.swift; sourceTree = "<group>"; };
@@ -118,6 +123,7 @@
 		DF70B2D69F4291D0EEECF41E /* B2VolumeOperations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = B2VolumeOperations.swift; sourceTree = "<group>"; };
 		E0E6C3CAB4887F042706C25F /* CloudMountExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = CloudMountExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		F199CE2CC481105CE8C647F5 /* FileCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileCache.swift; sourceTree = "<group>"; };
+		F2EA1356685E652644B99E8A /* ExtensionDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExtensionDetector.swift; sourceTree = "<group>"; };
 		F56A1F700399746EA96DF1EF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -187,7 +193,10 @@
 			children = (
 				B3788726E2E79EA78AFA73FA /* AppState.swift */,
 				245352CBCDD999B011797180 /* CloudMountApp.swift */,
+				F2EA1356685E652644B99E8A /* ExtensionDetector.swift */,
 				58F100E013EA0D11989456A8 /* Info.plist */,
+				3A6262A5EA669F2E7EAC6CA6 /* MountClient.swift */,
+				8AE794C490B60EA0AB609BA2 /* MountMonitor.swift */,
 				9BDE49AFB6468210B809F99D /* Views */,
 			);
 			path = CloudMount;
@@ -371,7 +380,10 @@
 			files = (
 				54A3F8C67A3404A6376BB4B1 /* AppState.swift in Sources */,
 				3640B8C10A96787ACCD23A98 /* CloudMountApp.swift in Sources */,
+				323FC09767FB302B2654B8FD /* ExtensionDetector.swift in Sources */,
 				C7D887436E1C3D3CA083F27C /* MenuContentView.swift in Sources */,
+				B5F204DBB89506EE7B55EFD9 /* MountClient.swift in Sources */,
+				CD3722E0054EF65F9D77EC65 /* MountMonitor.swift in Sources */,
 				049E5BC55DDD5F9242BA83FF /* SettingsView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
