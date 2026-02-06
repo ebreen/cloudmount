@@ -80,11 +80,11 @@ Plans:
   2. Menu bar UI accurately reflects mount status (mounted/unmounted) in real time
   3. First launch detects whether FSKit extension is enabled and guides user to System Settings if not
   4. All macFUSE references are gone from the UI, and bucket listing works in Settings for credential setup
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 07-01: TBD
-- [ ] 07-02: TBD
+- [ ] 07-01-PLAN.md — MountClient + MountMonitor + ExtensionDetector (infrastructure)
+- [ ] 07-02-PLAN.md — Wire AppState, MenuContentView, OnboardingView (UI integration)
 
 ### Phase 8: Distribution
 **Goal**: Users can install CloudMount via DMG download or `brew install --cask cloudmount`, with releases automated through CI/CD
