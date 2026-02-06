@@ -11,6 +11,11 @@ settings:
     SWIFT_VERSION: "6.0"
     MACOSX_DEPLOYMENT_TARGET: "26.0"
 
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.0.0"
+
 targets:
   CloudMount:
     type: application
@@ -34,6 +39,7 @@ targets:
       - target: CloudMountExtension
         embed: true
         codeSign: true
+      - package: Sparkle
 
   CloudMountExtension:
     type: app-extension
