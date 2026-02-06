@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-05)
 ## Current Position
 
 Phase: 8 of 8 (Distribution)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-06 - Completed 08-01-PLAN.md
+Last activity: 2026-02-06 - Completed 08-02-PLAN.md
 
-Progress: [███████████████████░] 93% (26/28 plans — v1.0 complete, v2.0 in progress)
+Progress: [███████████████████░] 96% (27/28 plans — v1.0 complete, v2.0 in progress)
 
 ## What's Complete
 
@@ -37,6 +37,7 @@ Progress: [███████████████████░] 93% (26
 - [x] Phase 7 Plan 1: MountClient + MountMonitor + ExtensionDetector (infrastructure)
 - [x] Phase 7 Plan 2: AppState mount orchestration + MenuContentView wiring + OnboardingView (UI integration)
 - [x] Phase 8 Plan 1: Sparkle updater integration + export options distribution config
+- [x] Phase 8 Plan 2: CI/CD pipelines for PR checks, release signing/notarization, and DMG publishing
 - [x] Phase 8 Plan 3: Homebrew Cask formula template + Sparkle appcast placeholder
 
 See: .planning/milestones/v1.0-ROADMAP.md
@@ -44,7 +45,7 @@ See: .planning/milestones/v1.0-ROADMAP.md
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26
+- Total plans completed: 27
 - Average duration: —
 - Total execution time: —
 
@@ -59,7 +60,7 @@ See: .planning/milestones/v1.0-ROADMAP.md
 | 5. Build System & B2 Client | 5/5 | 20min | 4.0min |
 | 6. FSKit Filesystem | 4/4 | 40min | 10.0min |
 | 7. App Integration | 2/2 | 12min | 6.0min |
-| 8. Distribution | 1/3 | 2min | 2.0min |
+| 8. Distribution | 2/3 | 4min | 2.0min |
 
 *Updated after each plan completion*
 
@@ -101,6 +102,7 @@ Recent decisions affecting current work:
 - Sparkle feed source of truth is repo-root `appcast.xml` prepared as an empty RSS channel for CI release population
 - Sparkle wired via SPM + SPUStandardUpdaterController, with a Check for Updates command in app menu
 - Distribution config keeps signing secrets external (SUPublicEDKey placeholder, no teamID in export options)
+- Release workflow sources team ID and signing identity from GitHub Secrets and injects signing metadata at runtime
 
 ### Blockers/Concerns
 
@@ -115,6 +117,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-02-06T14:11:08Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-02-06T14:11:51Z
+Stopped at: Completed 08-02-PLAN.md
 Resume file: None
