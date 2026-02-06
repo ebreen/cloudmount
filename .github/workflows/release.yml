@@ -77,42 +77,55 @@ jobs:
       - name: Archive
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          API_KEY_ID: ${{ secrets.API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.API_ISSUER_ID }}
         run: |
           xcodebuild archive \
             -project CloudMount.xcodeproj \
             -scheme CloudMount \
             -archivePath "$RUNNER_TEMP/CloudMount.xcarchive" \
             -configuration Release \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
-            CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
-            PROVISIONING_PROFILE_SPECIFIER=""
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$API_KEY_ID" \
+            -authenticationKeyIssuerID "$API_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID"
 
       - name: Export archive
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
+          # Make our keychain the default so exportArchive finds the Developer ID cert
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          security default-keychain -s "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
           EXPORT_PLIST="$RUNNER_TEMP/export-options.plist"
-          cat > "$EXPORT_PLIST" << 'EOF'
+          cat > "$EXPORT_PLIST" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
             <key>method</key>
             <string>developer-id</string>
+            <key>teamID</key>
+            <string>${TEAM_ID}</string>
             <key>signingStyle</key>
             <string>manual</string>
+            <key>signingCertificate</key>
+            <string>${SIGNING_IDENTITY}</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.cloudmount.app</key>
+              <string>CloudMount Developer ID</string>
+              <key>com.cloudmount.app.extension</key>
+              <string>CloudMount Extension Developer ID</string>
+            </dict>
           </dict>
           </plist>
           EOF
-
-          /usr/libexec/PlistBuddy -c "Add :teamID string $TEAM_ID" "$EXPORT_PLIST"
-          /usr/libexec/PlistBuddy -c "Add :signingCertificate string $SIGNING_IDENTITY" "$EXPORT_PLIST"
-          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles dict" "$EXPORT_PLIST"
-          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:com.cloudmount.app string CloudMount Developer ID" "$EXPORT_PLIST"
-          /usr/libexec/PlistBuddy -c "Add :provisioningProfiles:com.cloudmount.app.extension string CloudMount Extension Developer ID" "$EXPORT_PLIST"
 
           xcodebuild -exportArchive \
             -archivePath "$RUNNER_TEMP/CloudMount.xcarchive" \
