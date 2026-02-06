@@ -43,9 +43,21 @@ jobs:
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
 
           security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
-          # CRITICAL: Without this, codesign cannot access the certificate
           security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+          # Make keychain visible to xcodebuild for both archive and export
+          security default-keychain -s "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" /Library/Keychains/System.keychain
+
+          # Verify the correct certificate type is present
+          echo "Checking for Developer ID Application certificate..."
+          if ! security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -q "Developer ID Application"; then
+            echo "::error::BUILD_CERTIFICATE_BASE64 does not contain a Developer ID Application certificate."
+            echo "Found identities:"
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+            exit 1
+          fi
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
 
       - name: Install provisioning profiles
         env:
@@ -68,53 +80,25 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" CloudMount/Info.plist
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${{ github.run_number }}" CloudMountExtension/Info.plist
 
-      - name: Decode API key for Xcode
-        env:
-          APP_STORE_CONNECT_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
-        run: |
-          echo -n "$APP_STORE_CONNECT_KEY_BASE64" | base64 --decode -o "$RUNNER_TEMP/AuthKey.p8"
-
       - name: Archive
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          API_KEY_ID: ${{ secrets.API_KEY_ID }}
-          API_ISSUER_ID: ${{ secrets.API_ISSUER_ID }}
+          SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
           xcodebuild archive \
             -project CloudMount.xcodeproj \
             -scheme CloudMount \
             -archivePath "$RUNNER_TEMP/CloudMount.xcarchive" \
             -configuration Release \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
-            -authenticationKeyID "$API_KEY_ID" \
-            -authenticationKeyIssuerID "$API_ISSUER_ID" \
-            DEVELOPMENT_TEAM="$TEAM_ID"
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="$SIGNING_IDENTITY" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            PROVISIONING_PROFILE_SPECIFIER=""
 
       - name: Export archive
         env:
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
-          security default-keychain -s "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH" /Library/Keychains/System.keychain
-
-          # Verify the correct certificate type is present
-          echo "Checking for Developer ID Application certificate..."
-          if ! security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -q "Developer ID Application"; then
-            echo "::error::BUILD_CERTIFICATE_BASE64 does not contain a Developer ID Application certificate."
-            echo "Found identities:"
-            security find-identity -v -p codesigning "$KEYCHAIN_PATH"
-            echo ""
-            echo "Export your 'Developer ID Application' cert from Keychain Access as .p12,"
-            echo "base64-encode it, and update the BUILD_CERTIFICATE_BASE64 secret."
-            exit 1
-          fi
-          security find-identity -v -p codesigning "$KEYCHAIN_PATH"
-
           EXPORT_PLIST="$RUNNER_TEMP/export-options.plist"
           cat > "$EXPORT_PLIST" <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
